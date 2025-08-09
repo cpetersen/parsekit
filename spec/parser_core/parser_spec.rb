@@ -53,22 +53,16 @@ RSpec.describe ParserCore::Parser do
 
   describe "#parse_file" do
     let(:parser) { described_class.new }
-    let(:test_file) { "spec/fixtures/parser_test.txt" }
-
-    before do
-      FileUtils.mkdir_p("spec/fixtures")
-      File.write(test_file, "File content for parsing")
-    end
-
-    after do
-      # Clean up only temporary test files
-      File.delete("spec/fixtures/parser_test.txt") if File.exist?("spec/fixtures/parser_test.txt")
-      File.delete("spec/fixtures/binary.bin") if File.exist?("spec/fixtures/binary.bin")
-    end
+    require 'tempfile'
 
     it "parses file content" do
-      result = parser.parse_file(test_file)
-      expect(result).to include("File content for parsing")
+      Tempfile.create(['parser_test', '.txt']) do |file|
+        file.write("File content for parsing")
+        file.flush
+        
+        result = parser.parse_file(file.path)
+        expect(result).to include("File content for parsing")
+      end
     end
 
     it "raises error for non-existent file" do
@@ -76,17 +70,27 @@ RSpec.describe ParserCore::Parser do
     end
 
     it "returns error for unrecognized binary files" do
-      binary_file = "spec/fixtures/binary.bin"
-      File.binwrite(binary_file, "\x00\x01\x02\x03text\xFF\xFE")
-      # parser-core returns error for unrecognized formats
-      expect { parser.parse_file(binary_file) }.to raise_error(RuntimeError, /Could not determine file type/)
+      Tempfile.create(['binary', '.bin']) do |file|
+        file.binmode
+        file.write("\x00\x01\x02\x03text\xFF\xFE")
+        file.flush
+        
+        # parser-core returns error for unrecognized formats
+        expect { parser.parse_file(file.path) }.to raise_error(RuntimeError, /Could not determine file type/)
+      end
     end
 
     it "respects parser configuration when parsing files" do
       strict_parser = described_class.new(strict_mode: true)
-      result = strict_parser.parse_file(test_file)
-      expect(result).to include("File content")
-      expect(strict_parser.strict_mode?).to be true
+      
+      Tempfile.create(['config_test', '.txt']) do |file|
+        file.write("File content")
+        file.flush
+        
+        result = strict_parser.parse_file(file.path)
+        expect(result).to include("File content")
+        expect(strict_parser.strict_mode?).to be true
+      end
     end
   end
 

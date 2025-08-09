@@ -44,74 +44,72 @@ RSpec.describe "ParserCore Integration" do
   end
 
   describe "batch processing" do
+    require 'tmpdir'
+    
     it "can process multiple files sequentially" do
-      files = []
-      3.times do |i|
-        file = "spec/fixtures/batch_#{i}.txt"
-        FileUtils.mkdir_p("spec/fixtures")
-        File.write(file, "Content #{i}")
-        files << file
-      end
+      Dir.mktmpdir do |dir|
+        files = []
+        3.times do |i|
+          file = File.join(dir, "batch_#{i}.txt")
+          File.write(file, "Content #{i}")
+          files << file
+        end
 
-      results = files.map { |f| ParserCore.parse_file(f) }
-      
-      expect(results.size).to eq(3)
-      expect(results).to all(be_a(String))
-      
-      # Clean up temporary batch files
-      files.each { |f| File.delete(f) if File.exist?(f) }
+        results = files.map { |f| ParserCore.parse_file(f) }
+        
+        expect(results.size).to eq(3)
+        expect(results).to all(be_a(String))
+      end
     end
   end
 
   describe "encoding handling" do
-    before { FileUtils.mkdir_p("spec/fixtures") }
-    after do
-      # Clean up temporary test files only
-      %w[utf8.txt ascii.txt].each do |f|
-        File.delete("spec/fixtures/#{f}") if File.exist?("spec/fixtures/#{f}")
+    require 'tempfile'
+    
+    it "handles UTF-8 encoded files" do
+      Tempfile.create(['utf8', '.txt']) do |file|
+        file.write("UTF-8: 世界 мир विश्व")
+        file.flush
+        
+        result = ParserCore.parse_file(file.path)
+        expect(result).to include("UTF-8:")
       end
     end
 
-    it "handles UTF-8 encoded files" do
-      file = "spec/fixtures/utf8.txt"
-      File.write(file, "UTF-8: 世界 мир विश्व", encoding: "UTF-8")
-      result = ParserCore.parse_file(file)
-      expect(result).to include("UTF-8:")
-    end
-
     it "handles ASCII encoded files" do
-      file = "spec/fixtures/ascii.txt"
-      File.write(file, "ASCII text only", encoding: "ASCII")
-      result = ParserCore.parse_file(file)
-      expect(result).to include("ASCII text only")
+      Tempfile.create(['ascii', '.txt'], encoding: 'ASCII') do |file|
+        file.write("ASCII text only")
+        file.flush
+        
+        result = ParserCore.parse_file(file.path)
+        expect(result).to include("ASCII text only")
+      end
     end
   end
 
   describe "error recovery" do
+    require 'tempfile'
+    
     it "returns appropriate error for unrecognized formats" do
-      # Create a file with random binary data that's not a valid document
-      corrupted_file = "spec/fixtures/corrupted.bin"
-      FileUtils.mkdir_p("spec/fixtures")
-      File.binwrite(corrupted_file, Random.bytes(100))
-      
-      # parser-core returns error for unrecognized file formats
-      expect { ParserCore.parse_file(corrupted_file) }.to raise_error(RuntimeError, /Could not determine file type/)
-      
-      # Clean up temporary file
-      File.delete(corrupted_file) if File.exist?(corrupted_file)
+      Tempfile.create(['corrupted', '.bin']) do |file|
+        file.binmode
+        file.write(Random.bytes(100))
+        file.flush
+        
+        # parser-core returns error for unrecognized file formats
+        expect { ParserCore.parse_file(file.path) }.to raise_error(RuntimeError, /Could not determine file type/)
+      end
     end
 
     it "handles text files without errors" do
-      text_file = "spec/fixtures/valid.txt"
-      FileUtils.mkdir_p("spec/fixtures")
-      File.write(text_file, "Valid text content")
-      
-      # Text files should parse successfully
-      result = ParserCore.parse_file(text_file)
-      expect(result).to include("Valid text content")
-      
-      # Clean up temporary file
-      File.delete(text_file) if File.exist?(text_file)
+      Tempfile.create(['valid', '.txt']) do |file|
+        file.write("Valid text content")
+        file.flush
+        
+        # Text files should parse successfully
+        result = ParserCore.parse_file(file.path)
+        expect(result).to include("Valid text content")
+      end
     end
   end
 
@@ -131,6 +129,8 @@ RSpec.describe "ParserCore Integration" do
   end
 
   describe "module and class methods consistency" do
+    require 'tempfile'
+    
     it "produces same results for module and instance methods" do
       input = "test content"
       
@@ -145,21 +145,19 @@ RSpec.describe "ParserCore Integration" do
     end
 
     it "handles file parsing consistently" do
-      file = "spec/fixtures/consistency.txt"
-      FileUtils.mkdir_p("spec/fixtures")
-      File.write(file, "consistent content")
-      
-      # Module method
-      module_result = ParserCore.parse_file(file)
-      
-      # Instance method
-      parser = ParserCore::Parser.new
-      instance_result = parser.parse_file(file)
-      
-      expect(module_result).to eq(instance_result)
-      
-      # Clean up temporary file
-      File.delete(file) if File.exist?(file)
+      Tempfile.create(['consistency', '.txt']) do |file|
+        file.write("consistent content")
+        file.flush
+        
+        # Module method
+        module_result = ParserCore.parse_file(file.path)
+        
+        # Instance method
+        parser = ParserCore::Parser.new
+        instance_result = parser.parse_file(file.path)
+        
+        expect(module_result).to eq(instance_result)
+      end
     end
   end
 end

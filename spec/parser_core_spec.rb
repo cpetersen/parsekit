@@ -28,24 +28,17 @@ RSpec.describe ParserCore do
   end
 
   describe ".parse_file" do
-    let(:test_file) { "spec/fixtures/test.txt" }
-
-    before do
-      FileUtils.mkdir_p("spec/fixtures")
-      File.write(test_file, "test file content")
-    end
-
-    after do
-      # Clean up only temporary test files, not the sample documents
-      File.delete("spec/fixtures/test.txt") if File.exist?("spec/fixtures/test.txt")
-      File.delete("spec/fixtures/unicode.txt") if File.exist?("spec/fixtures/unicode.txt")
-      File.delete("spec/fixtures/empty.txt") if File.exist?("spec/fixtures/empty.txt")
-    end
+    require 'tempfile'
 
     it "parses a file" do
-      result = described_class.parse_file(test_file)
-      expect(result).to be_a(String)
-      expect(result).to include("test file content")
+      Tempfile.create(['test', '.txt']) do |file|
+        file.write("test file content")
+        file.flush
+        
+        result = described_class.parse_file(file.path)
+        expect(result).to be_a(String)
+        expect(result).to include("test file content")
+      end
     end
 
     it "raises an error for non-existent file" do
@@ -53,18 +46,24 @@ RSpec.describe ParserCore do
     end
 
     it "handles files with unicode content" do
-      unicode_file = "spec/fixtures/unicode.txt"
-      File.write(unicode_file, "Hello 世界 🌍 Здравствуй мир")
-      result = described_class.parse_file(unicode_file)
-      expect(result).to include("Hello 世界 🌍")
+      Tempfile.create(['unicode', '.txt']) do |file|
+        file.write("Hello 世界 🌍 Здравствуй мир")
+        file.flush
+        
+        result = described_class.parse_file(file.path)
+        expect(result).to include("Hello 世界 🌍")
+      end
     end
 
     it "handles empty files" do
-      empty_file = "spec/fixtures/empty.txt"
-      File.write(empty_file, "")
-      # parser-core returns empty string for empty files
-      result = described_class.parse_file(empty_file)
-      expect(result).to eq("")
+      Tempfile.create(['empty', '.txt']) do |file|
+        # Don't write anything - empty file
+        file.flush
+        
+        # parser-core returns empty string for empty files
+        result = described_class.parse_file(file.path)
+        expect(result).to eq("")
+      end
     end
   end
 
