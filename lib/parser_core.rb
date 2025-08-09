@@ -15,23 +15,29 @@ require_relative "parser_core/parser"
 # ParserCore is a Ruby binding for the parser-core Rust crate
 module ParserCore
   class << self
-    # Convenience method to parse input directly
+    # The parse_file and parse_data methods are defined in the native extension
+    # We just need to document them here or add wrapper logic if needed
+    
+    # Convenience method to parse input directly (for text)
     # @param input [String] The input string to parse
     # @param options [Hash] Optional configuration options
-    # @option options [Boolean] :strict_mode Enable strict parsing mode
-    # @option options [Integer] :max_depth Maximum parsing depth
     # @option options [String] :encoding Input encoding (default: UTF-8)
     # @return [String] The parsed result
     def parse(input, options = {})
       Parser.new(options).parse(input)
     end
     
-    # Parse a file
-    # @param path [String] Path to the file to parse
-    # @param options [Hash] Optional configuration options
-    # @return [String] The parsed result
-    def parse_file(path, options = {})
-      Parser.new(options).parse_file(path)
+    # Get supported file formats
+    # @return [Array<String>] List of supported file extensions
+    def supported_formats
+      Parser.supported_formats
+    end
+    
+    # Check if a file format is supported
+    # @param path [String] File path to check
+    # @return [Boolean] True if the file format is supported
+    def supports_file?(path)
+      Parser.new.supports_file?(path)
     end
     
     # Get the native library version

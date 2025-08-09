@@ -12,9 +12,13 @@ name = "parser_core"
 
 [dependencies]
 magnus = { version = "0.7", features = ["rb-sys"] }
-# Note: parser-core doesn't exist yet, so we'll need to adjust this
-# For now, we'll create a basic implementation that can be replaced
-# parser-core = "0.1"
+# Document parsing without system dependencies
+pdf-extract = { version = "0.7", default-features = false }
+calamine = "0.26"  # Excel parsing
+quick-xml = "0.36"  # XML parsing
+serde_json = "1.0"  # JSON parsing
+regex = "1.10"  # Text parsing
+encoding_rs = "0.8"  # Encoding detection
 
 [features]
 default = []
