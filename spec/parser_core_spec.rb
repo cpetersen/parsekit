@@ -48,6 +48,49 @@ RSpec.describe ParserCore do
     it "raises an error for non-existent file" do
       expect { described_class.parse_file("non_existent.txt") }.to raise_error(IOError)
     end
+
+    it "handles files with unicode content" do
+      unicode_file = "spec/fixtures/unicode.txt"
+      File.write(unicode_file, "Hello 世界 🌍 Здравствуй мир")
+      result = described_class.parse_file(unicode_file)
+      expect(result).to include("Hello 世界 🌍")
+    end
+
+    it "handles empty files" do
+      empty_file = "spec/fixtures/empty.txt"
+      File.write(empty_file, "")
+      # parser-core returns empty string for empty files
+      result = described_class.parse_file(empty_file)
+      expect(result).to eq("")
+    end
+  end
+
+  describe ".parse_bytes" do
+    it "parses binary data" do
+      data = "test content".bytes
+      result = described_class.parse_bytes(data)
+      expect(result).to be_a(String)
+      expect(result).to include("test content")
+    end
+
+    it "raises an error for empty data" do
+      expect { described_class.parse_bytes([]) }.to raise_error(ArgumentError, /cannot be empty/)
+    end
+
+    it "handles unicode binary data" do
+      unicode_text = "Hello 世界 🌍"
+      data = unicode_text.bytes
+      result = described_class.parse_bytes(data)
+      expect(result).to include(unicode_text)
+    end
+
+    it "handles large binary data" do
+      # Create 1MB of text data
+      large_text = "a" * (1024 * 1024)
+      data = large_text.bytes
+      result = described_class.parse_bytes(data)
+      expect(result.length).to be > 0
+    end
   end
 
   describe ".native_version" do
@@ -65,6 +108,47 @@ RSpec.describe ParserCore do
       expect(ParserCore::Error).to be_a(Class)
       expect(ParserCore::ParseError).to be_a(Class)
       expect(ParserCore::ConfigError).to be_a(Class)
+    end
+  end
+
+  describe "edge cases" do
+    it "handles very long strings" do
+      long_string = "x" * 1_000_000
+      result = described_class.parse(long_string)
+      expect(result).to be_a(String)
+    end
+
+    it "handles strings with null bytes" do
+      string_with_null = "test\0content"
+      result = described_class.parse(string_with_null)
+      expect(result).to be_a(String)
+    end
+
+    it "handles strings with only whitespace" do
+      result = described_class.parse("   \n\t  ")
+      expect(result).to be_a(String)
+    end
+
+    it "handles strings with special characters" do
+      special_chars = "!@#$%^&*()_+-=[]{}|;':,.<>?/~`"
+      result = described_class.parse(special_chars)
+      expect(result).to include(special_chars)
+    end
+  end
+
+  describe "thread safety" do
+    it "can parse concurrently from multiple threads" do
+      results = []
+      threads = 10.times.map do |i|
+        Thread.new do
+          result = described_class.parse("thread #{i}")
+          results << result
+        end
+      end
+      threads.each(&:join)
+      
+      expect(results.size).to eq(10)
+      expect(results).to all(be_a(String))
     end
   end
 end
