@@ -1,0 +1,25 @@
+[package]
+name = "parser_core_native"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+license = "MIT"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+name = "parser_core_native"
+
+[dependencies]
+magnus = { version = "0.7", features = ["rb-sys"] }
+# Note: parser-core doesn't exist yet, so we'll need to adjust this
+# For now, we'll create a basic implementation that can be replaced
+# parser-core = "0.1"
+
+[features]
+default = []
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

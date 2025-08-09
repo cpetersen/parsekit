@@ -1,0 +1,48 @@
+/.bundle/
+/.yardoc
+/_yardoc/
+/coverage/
+/doc/
+/pkg/
+/spec/reports/
+/tmp/
+
+# rspec failure tracking
+.rspec_status
+
+# Rust/Cargo
+/ext/**/target/
+/ext/**/Cargo.lock
+**/*.rs.bk
+*.so
+*.o
+*.bundle
+*.dll
+*.dylib
+
+# Ruby
+*.gem
+Gemfile.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+/lib/parser_core/*.bundle
+/lib/parser_core/*.so
+/lib/parser_core/*.dll
+
+# Documentation
+/.yard/
+/rdoc/
+
+# Test artifacts
+/spec/examples.txt
