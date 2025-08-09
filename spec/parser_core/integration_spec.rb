@@ -58,13 +58,19 @@ RSpec.describe "ParserCore Integration" do
       expect(results.size).to eq(3)
       expect(results).to all(be_a(String))
       
-      # Don't delete fixtures - they're in version control now
+      # Clean up temporary batch files
+      files.each { |f| File.delete(f) if File.exist?(f) }
     end
   end
 
   describe "encoding handling" do
     before { FileUtils.mkdir_p("spec/fixtures") }
-    # Fixtures are in version control - don't delete them
+    after do
+      # Clean up temporary test files only
+      %w[utf8.txt ascii.txt].each do |f|
+        File.delete("spec/fixtures/#{f}") if File.exist?("spec/fixtures/#{f}")
+      end
+    end
 
     it "handles UTF-8 encoded files" do
       file = "spec/fixtures/utf8.txt"
@@ -91,7 +97,8 @@ RSpec.describe "ParserCore Integration" do
       # parser-core returns error for unrecognized file formats
       expect { ParserCore.parse_file(corrupted_file) }.to raise_error(RuntimeError, /Could not determine file type/)
       
-      # Don't delete fixtures - they're in version control now
+      # Clean up temporary file
+      File.delete(corrupted_file) if File.exist?(corrupted_file)
     end
 
     it "handles text files without errors" do
@@ -103,7 +110,8 @@ RSpec.describe "ParserCore Integration" do
       result = ParserCore.parse_file(text_file)
       expect(result).to include("Valid text content")
       
-      # Don't delete fixtures - they're in version control now
+      # Clean up temporary file
+      File.delete(text_file) if File.exist?(text_file)
     end
   end
 
@@ -150,7 +158,8 @@ RSpec.describe "ParserCore Integration" do
       
       expect(module_result).to eq(instance_result)
       
-      # Don't delete fixtures - they're in version control now
+      # Clean up temporary file
+      File.delete(file) if File.exist?(file)
     end
   end
 end

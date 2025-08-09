@@ -61,7 +61,9 @@ RSpec.describe ParserCore::Parser do
     end
 
     after do
-      # Don't delete fixtures - they're in version control now
+      # Clean up only temporary test files
+      File.delete("spec/fixtures/parser_test.txt") if File.exist?("spec/fixtures/parser_test.txt")
+      File.delete("spec/fixtures/binary.bin") if File.exist?("spec/fixtures/binary.bin")
     end
 
     it "parses file content" do
