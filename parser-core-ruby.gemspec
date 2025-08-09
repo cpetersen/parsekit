@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
 
   spec.summary = "Ruby bindings for parser-core Rust crate"
   spec.description = "Native Ruby bindings for the parser-core Rust crate, providing high-performance parsing capabilities through Magnus"
-  spec.homepage = "https://github.com/yourusername/parser-core-ruby"
+  spec.homepage = "https://github.com/cpetersen/parser-core-ruby"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.0.0"
 

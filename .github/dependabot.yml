@@ -6,7 +6,7 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 10
     reviewers:
-      - "yourusername"
+      - "cpetersen"
     labels:
       - "dependencies"
       - "ruby"
@@ -17,7 +17,7 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 10
     reviewers:
-      - "yourusername"
+      - "cpetersen"
     labels:
       - "dependencies"
       - "rust"
@@ -28,7 +28,7 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 10
     reviewers:
-      - "yourusername"
+      - "cpetersen"
     labels:
       - "dependencies"
       - "github-actions"

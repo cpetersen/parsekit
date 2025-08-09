@@ -1,6 +1,6 @@
 # ParserCore Ruby
 
-[![CI](https://github.com/yourusername/parser-core-ruby/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/parser-core-ruby/actions/workflows/ci.yml)
+[![CI](https://github.com/cpetersen/parser-core-ruby/actions/workflows/ci.yml/badge.svg)](https://github.com/cpetersen/parser-core-ruby/actions/workflows/ci.yml)
 [![Gem Version](https://badge.fury.io/rb/parser-core-ruby.svg)](https://badge.fury.io/rb/parser-core-ruby)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -227,16 +227,15 @@ The parser-core-ruby gem provides near-native performance through Rust while mai
 
 ## Ecosystem
 
-parser-core-ruby is part of the ruby-nlp ecosystem:
+`parser-core-ruby` is part of the ruby-nlp ecosystem:
 
-- [red-candle](https://github.com/yourusername/red-candle) - LLM and NLP models for Ruby
-- [lancelot](https://github.com/yourusername/lancelot) - Lance columnar store bindings
-- [annembed-ruby](https://github.com/yourusername/annembed-ruby) - Embedding functionality
-- [candle-tensor](https://github.com/yourusername/candle-tensor) - Tensor operations
+- [red-candle](https://github.com/assaydepot/red-candle) - LLM and NLP models for Ruby
+- [lancelot](https://github.com/cpetersen/lancelot) - Lance columnar store bindings
+- [annembed-ruby](https://github.com/cpetersen/annembed-ruby) - Embedding functionality
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/yourusername/parser-core-ruby. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](CODE_OF_CONDUCT.md).
+Bug reports and pull requests are welcome on GitHub at https://github.com/cpetersen/parser-core-ruby. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](CODE_OF_CONDUCT.md).
 
 ### Development Process
 
@@ -276,5 +275,4 @@ Everyone interacting in the ParserCore Ruby project's codebases, issue trackers,
 ## Support
 
 - **Documentation**: [https://rubydoc.info/gems/parser-core-ruby](https://rubydoc.info/gems/parser-core-ruby)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/parser-core-ruby/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/parser-core-ruby/discussions)
+- **Issues**: [GitHub Issues](https://github.com/cpetersen/parser-core-ruby/issues)
