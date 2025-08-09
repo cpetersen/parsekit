@@ -1,0 +1,159 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.1.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-native:
+    name: Build native gem for ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: x86_64-linux
+            os: ubuntu-latest
+            ruby: '3.2'
+          - platform: arm64-darwin
+            os: macos-latest
+            ruby: '3.2'
+          - platform: x86_64-darwin
+            os: macos-13  # Use macos-13 for x86_64
+            ruby: '3.2'
+          - platform: aarch64-linux
+            os: ubuntu-latest
+            ruby: '3.2'
+          - platform: x86_64-windows
+            os: windows-latest
+            ruby: '3.2'
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby }}
+        bundler-cache: true
+    
+    - name: Set up Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: stable
+        targets: ${{ matrix.rust-target }}
+    
+    - name: Install cross-compilation tools (Linux)
+      if: runner.os == 'Linux' && matrix.platform == 'aarch64-linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-aarch64-linux-gnu
+    
+    - name: Build native gem
+      run: |
+        bundle exec rake compile
+        gem build parser-core-ruby.gemspec
+    
+    - name: Upload native gem
+      uses: actions/upload-artifact@v4
+      with:
+        name: gem-${{ matrix.platform }}
+        path: parser-core-ruby-*.gem
+        retention-days: 7
+
+  release:
+    name: Create Release
+    needs: build-native
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: gems
+    
+    - name: Set version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ steps.version.outputs.version }}
+        name: Release v${{ steps.version.outputs.version }}
+        draft: false
+        prerelease: false
+        files: gems/**/*.gem
+        body: |
+          ## Parser Core Ruby v${{ steps.version.outputs.version }}
+          
+          ### Installation
+          
+          Add this line to your application's Gemfile:
+          
+          ```ruby
+          gem 'parser-core-ruby', '~> ${{ steps.version.outputs.version }}'
+          ```
+          
+          And then execute:
+          ```bash
+          bundle install
+          ```
+          
+          Or install it yourself:
+          ```bash
+          gem install parser-core-ruby
+          ```
+          
+          ### Changes
+          
+          See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish:
+    name: Publish to RubyGems
+    needs: release
+    runs-on: ubuntu-latest
+    environment: rubygems
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.2'
+        bundler-cache: true
+    
+    - name: Set up Rust
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Build gem
+      run: |
+        bundle exec rake compile
+        gem build parser-core-ruby.gemspec
+    
+    - name: Push to RubyGems
+      run: |
+        gem push parser-core-ruby-*.gem
+      env:
+        GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
