@@ -4,9 +4,9 @@ require_relative "parser_core/version"
 
 # Load the native extension
 begin
-  require_relative "parser_core/parser_core_native"
+  require_relative "parser_core/parser_core"
 rescue LoadError
-  require "parser_core/parser_core_native"
+  require "parser_core/parser_core"
 end
 
 require_relative "parser_core/error"

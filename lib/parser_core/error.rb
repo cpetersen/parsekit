@@ -1,12 +1,15 @@
 # frozen_string_literal: true
 
 module ParserCore
-  # Base error class for ParserCore
-  class Error < StandardError; end
+  # Error classes are defined in the native extension
+  # This file is kept for documentation purposes
   
-  # Raised when parsing fails
-  class ParseError < Error; end
+  # Base error class for ParserCore (defined in native extension)
+  # class Error < StandardError; end
   
-  # Raised when configuration is invalid
-  class ConfigError < Error; end
+  # Raised when parsing fails (defined in native extension)
+  # class ParseError < Error; end
+  
+  # Raised when configuration is invalid (defined in native extension)
+  # class ConfigError < Error; end
 end

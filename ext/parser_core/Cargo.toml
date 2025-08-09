@@ -1,5 +1,5 @@
 [package]
-name = "parser_core_native"
+name = "parser_core"
 version = "0.1.0"
 edition = "2021"
 authors = ["Your Name <your.email@example.com>"]
@@ -8,7 +8,7 @@ publish = false
 
 [lib]
 crate-type = ["cdylib"]
-name = "parser_core_native"
+name = "parser_core"
 
 [dependencies]
 magnus = { version = "0.7", features = ["rb-sys"] }

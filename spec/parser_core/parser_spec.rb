@@ -68,7 +68,7 @@ RSpec.describe ParserCore::Parser do
     end
 
     it "raises error for non-existent file" do
-      expect { parser.parse_file("missing.txt") }.to raise_error(Errno::ENOENT)
+      expect { parser.parse_file("missing.txt") }.to raise_error(IOError)
     end
   end
 

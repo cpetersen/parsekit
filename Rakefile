@@ -11,11 +11,11 @@ RSpec::Core::RakeTask.new(:spec)
 spec = Gem::Specification.load("parser-core-ruby.gemspec")
 
 # Extension compilation task
-Rake::ExtensionTask.new("parser_core_native", spec) do |ext|
+Rake::ExtensionTask.new("parser_core", spec) do |ext|
   ext.lib_dir = "lib/parser_core"
+  ext.source_pattern = "*.{c,cc,cpp,rs}"
   ext.cross_compile = true
   ext.cross_platform = %w[x86_64-linux arm64-darwin x86_64-darwin aarch64-linux]
-  ext.config_script = ENV["ALTERNATE_CONFIG_SCRIPT"] || "extconf.rb"
 end
 
 # Default task runs compile then tests

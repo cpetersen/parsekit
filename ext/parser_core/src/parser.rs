@@ -1,6 +1,5 @@
 use magnus::{
-    class, define_class, function, method, prelude::*, scan_args, Error, Module, Object, Ruby,
-    RHash, Value,
+    class, function, method, prelude::*, scan_args, Error, RHash, RModule, Ruby, Value, Module,
 };
 
 #[derive(Debug, Clone)]
@@ -32,7 +31,7 @@ impl Parser {
     /// Create a new Parser instance with optional configuration
     fn new(ruby: &Ruby, args: &[Value]) -> Result<Self, Error> {
         let args = scan_args::scan_args::<(), (Option<RHash>,), (), (), (), ()>(args)?;
-        let options = args.1.0;
+        let options = args.optional.0;
         
         let mut config = ParserConfig::default();
         
@@ -71,17 +70,18 @@ impl Parser {
     }
     
     /// Parse a file
-    fn parse_file(&self, ruby: &Ruby, path: String) -> Result<String, Error> {
+    fn parse_file(&self, path: String) -> Result<String, Error> {
         use std::fs;
         
         let content = fs::read_to_string(&path)
-            .map_err(|e| Error::new(ruby.exception_io_error(), format!("Failed to read file: {}", e)))?;
+            .map_err(|e| Error::new(magnus::exception::io_error(), format!("Failed to read file: {}", e)))?;
         
         self.parse(content)
     }
     
     /// Get parser configuration
-    fn config(&self, ruby: &Ruby) -> Result<RHash, Error> {
+    fn config(&self) -> Result<RHash, Error> {
+        let ruby = Ruby::get().unwrap();
         let hash = ruby.hash_new();
         hash.aset(ruby.to_symbol("strict_mode"), self.config.strict_mode)?;
         hash.aset(ruby.to_symbol("max_depth"), self.config.max_depth)?;
@@ -96,7 +96,7 @@ impl Parser {
 }
 
 /// Initialize the Parser class
-pub fn init(ruby: &Ruby, module: &Module) -> Result<(), Error> {
+pub fn init(_ruby: &Ruby, module: RModule) -> Result<(), Error> {
     let class = module.define_class("Parser", class::object())?;
     
     class.define_singleton_method("new", function!(Parser::new, -1))?;
