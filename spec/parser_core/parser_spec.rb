@@ -61,7 +61,7 @@ RSpec.describe ParserCore::Parser do
     end
 
     after do
-      FileUtils.rm_rf("spec/fixtures")
+      # Don't delete fixtures - they're in version control now
     end
 
     it "parses file content" do

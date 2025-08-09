@@ -10,10 +10,8 @@ RSpec.describe "ParserCore Integration" do
       
       it "extracts text from PDF files" do
         pdf_file = "spec/fixtures/sample.pdf"
-        unless File.exist?(pdf_file)
-          pending "Requires sample PDF file"
-          fail
-        end
+        skip "Requires sample PDF file" unless File.exist?(pdf_file)
+        
         result = parser.parse_file(pdf_file)
         expect(result).to be_a(String)
         expect(result.length).to be > 0
@@ -21,30 +19,24 @@ RSpec.describe "ParserCore Integration" do
 
       it "extracts text from Word documents" do
         docx_file = "spec/fixtures/sample.docx"
-        unless File.exist?(docx_file)
-          pending "Requires sample DOCX file"
-          fail
-        end
+        skip "Requires sample DOCX file" unless File.exist?(docx_file)
+        
         result = parser.parse_file(docx_file)
         expect(result).to be_a(String)
       end
 
       it "extracts text from Excel files" do
         xlsx_file = "spec/fixtures/sample.xlsx"
-        unless File.exist?(xlsx_file)
-          pending "Requires sample XLSX file"
-          fail
-        end
+        skip "Requires sample XLSX file" unless File.exist?(xlsx_file)
+        
         result = parser.parse_file(xlsx_file)
         expect(result).to be_a(String)
       end
 
       it "performs OCR on images" do
-        image_file = "spec/fixtures/text_image.png"
-        unless File.exist?(image_file)
-          pending "Requires sample image with text"
-          fail
-        end
+        image_file = "spec/fixtures/sample.png"
+        skip "Requires sample image with text" unless File.exist?(image_file)
+        
         result = parser.parse_file(image_file)
         expect(result).to be_a(String)
       end
@@ -66,13 +58,13 @@ RSpec.describe "ParserCore Integration" do
       expect(results.size).to eq(3)
       expect(results).to all(be_a(String))
       
-      FileUtils.rm_rf("spec/fixtures")
+      # Don't delete fixtures - they're in version control now
     end
   end
 
   describe "encoding handling" do
     before { FileUtils.mkdir_p("spec/fixtures") }
-    after { FileUtils.rm_rf("spec/fixtures") }
+    # Fixtures are in version control - don't delete them
 
     it "handles UTF-8 encoded files" do
       file = "spec/fixtures/utf8.txt"
@@ -99,7 +91,7 @@ RSpec.describe "ParserCore Integration" do
       # parser-core returns error for unrecognized file formats
       expect { ParserCore.parse_file(corrupted_file) }.to raise_error(RuntimeError, /Could not determine file type/)
       
-      FileUtils.rm_rf("spec/fixtures")
+      # Don't delete fixtures - they're in version control now
     end
 
     it "handles text files without errors" do
@@ -111,7 +103,7 @@ RSpec.describe "ParserCore Integration" do
       result = ParserCore.parse_file(text_file)
       expect(result).to include("Valid text content")
       
-      FileUtils.rm_rf("spec/fixtures")
+      # Don't delete fixtures - they're in version control now
     end
   end
 
@@ -158,7 +150,7 @@ RSpec.describe "ParserCore Integration" do
       
       expect(module_result).to eq(instance_result)
       
-      FileUtils.rm_rf("spec/fixtures")
+      # Don't delete fixtures - they're in version control now
     end
   end
 end
