@@ -34,6 +34,16 @@ module ParserCore
       Parser.new(options).parse_file(path)
     end
     
+    # Parse binary data
+    # @param data [String, Array] Binary data to parse
+    # @param options [Hash] Optional configuration options
+    # @return [String] The extracted text
+    def parse_bytes(data, options = {})
+      # Convert string to bytes if needed
+      byte_data = data.is_a?(String) ? data.bytes : data
+      Parser.new(options).parse_bytes(byte_data)
+    end
+    
     # Get the native library version
     # @return [String] Version of the native library
     def native_version

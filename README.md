@@ -4,13 +4,14 @@
 [![Gem Version](https://badge.fury.io/rb/parser-core-ruby.svg)](https://badge.fury.io/rb/parser-core-ruby)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Native Ruby bindings for the parser-core Rust crate, providing high-performance parsing capabilities through Magnus. This gem is part of the ruby-nlp ecosystem, bringing native NLP and parsing functionality to Ruby through Rust bindings.
+Native Ruby bindings for the [parser-core](https://crates.io/crates/parser-core) Rust crate, providing high-performance document parsing and text extraction capabilities through Magnus. This gem wraps parser-core to extract text from PDFs, Office documents (DOCX, XLSX, PPTX), images (with OCR), and more. Part of the ruby-nlp ecosystem.
 
 ## Features
 
+- 📄 **Document Parsing**: Extract text from PDFs, Office documents (DOCX, XLSX, PPTX)
+- 🖼️ **OCR Support**: Extract text from images using Tesseract OCR
 - 🚀 **High Performance**: Native Rust performance with Ruby convenience
-- 🔧 **Configurable**: Flexible parser configuration options
-- 🛡️ **Type Safe**: Strong typing through Rust with Ruby's dynamic nature
+- 🔧 **Unified API**: Single interface for multiple document formats
 - 📦 **Cross-Platform**: Works on Linux, macOS, and Windows
 - 🧪 **Well Tested**: Comprehensive test suite with RSpec
 
@@ -39,6 +40,13 @@ gem install parser-core-ruby
 - Ruby >= 3.0.0
 - Rust toolchain (stable)
 - C compiler (for linking)
+- System libraries for document parsing:
+  - **macOS**: `brew install leptonica tesseract poppler`
+  - **Ubuntu/Debian**: `sudo apt-get install libleptonica-dev libtesseract-dev libpoppler-cpp-dev`
+  - **Fedora/RHEL**: `sudo dnf install leptonica-devel tesseract-devel poppler-cpp-devel`
+  - **Windows**: See [DEPENDENCIES.md](DEPENDENCIES.md) for MSYS2 instructions
+  
+For detailed installation instructions and troubleshooting, see [DEPENDENCIES.md](DEPENDENCIES.md).
 
 ## Usage
 
@@ -47,17 +55,27 @@ gem install parser-core-ruby
 ```ruby
 require 'parser_core'
 
-# Simple parsing
-result = ParserCore.parse("Hello, World!")
-puts result  # => "Parsed(strict=false, depth=100): Hello, World!"
+# Parse a PDF file
+text = ParserCore.parse_file("document.pdf")
+puts text  # Extracted text from the PDF
 
-# Parse with options
-result = ParserCore.parse("Hello", strict_mode: true, max_depth: 50)
-puts result  # => "Parsed(strict=true, depth=50): Hello"
+# Parse an Office document
+text = ParserCore.parse_file("presentation.pptx")
+puts text  # Extracted text from all slides
 
-# Parse a file
-result = ParserCore.parse_file("path/to/file.txt")
-puts result
+# Parse an Excel file
+text = ParserCore.parse_file("spreadsheet.xlsx")
+puts text  # Extracted text from all sheets
+
+# Parse binary data directly
+file_data = File.binread("document.pdf")
+text = ParserCore.parse_bytes(file_data)
+puts text
+
+# Parse with a Parser instance
+parser = ParserCore::Parser.new
+text = parser.parse_file("report.docx")
+puts text
 ```
 
 ### Using the Parser Class

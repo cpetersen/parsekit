@@ -44,6 +44,15 @@ module ParserCore
     #   # Implemented in native extension
     # end
     
+    # Parse binary data
+    # @param data [Array<Integer>] Binary data as byte array
+    # @return [String] The extracted text content
+    # @raise [ArgumentError] If data is empty
+    # @raise [RuntimeError] If parsing fails
+    # def parse_bytes(data)
+    #   # Implemented in native extension
+    # end
+    
     # Ruby-level helper methods
     
     # Parse with a block for processing results
