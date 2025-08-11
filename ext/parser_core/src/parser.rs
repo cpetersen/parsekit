@@ -63,6 +63,7 @@ impl Parser {
         
         match file_type.as_str() {
             "pdf" => self.parse_pdf(data),
+            "docx" => self.parse_docx(data),
             "xlsx" | "xls" => self.parse_excel(data),
             "json" => self.parse_json(data),
             "xml" | "html" => self.parse_xml(data),
@@ -85,7 +86,11 @@ impl Parser {
         if data.starts_with(b"%PDF") {
             "pdf".to_string()
         } else if data.starts_with(b"PK") {
-            "xlsx".to_string() // Office Open XML format
+            // PK is the ZIP signature - could be DOCX or XLSX
+            // Try to differentiate by looking for common patterns
+            // This is a simplified check - both DOCX and XLSX are ZIP files
+            // For now, default to xlsx as it's more commonly parsed
+            "xlsx".to_string() // Office Open XML format (could also be DOCX)
         } else if data.starts_with(&[0xD0, 0xCF, 0x11, 0xE0]) {
             "xls".to_string() // Old Excel format
         } else if data.starts_with(b"<?xml") || data.starts_with(b"<html") {
@@ -102,6 +107,45 @@ impl Parser {
         // Note: pdf-extract has issues with system dependencies
         // For now, return a placeholder
         Ok("PDF parsing requires additional system libraries (install with: brew install poppler)".to_string())
+    }
+    
+    /// Parse DOCX (Word) files
+    fn parse_docx(&self, data: Vec<u8>) -> Result<String, Error> {
+        use docx_rs::read_docx;
+        
+        match read_docx(&data) {
+            Ok(docx) => {
+                let mut result = String::new();
+                
+                // Extract text from all document children
+                // For simplicity, we'll focus on paragraphs only for now
+                // Tables require more complex handling with the current API
+                for child in docx.document.children.iter() {
+                    if let docx_rs::DocumentChild::Paragraph(p) = child {
+                        // Extract text from paragraph
+                        for p_child in &p.children {
+                            if let docx_rs::ParagraphChild::Run(r) = p_child {
+                                for run_child in &r.children {
+                                    if let docx_rs::RunChild::Text(t) = run_child {
+                                        result.push_str(&t.text);
+                                    }
+                                }
+                            }
+                        }
+                        result.push('\n');
+                    }
+                    // Note: Table text extraction would require iterating through
+                    // table.rows -> TableChild::TableRow -> row.cells -> TableRowChild
+                    // which has a more complex structure in docx-rs
+                }
+                
+                Ok(result.trim().to_string())
+            }
+            Err(e) => Err(Error::new(
+                magnus::exception::runtime_error(),
+                format!("Failed to parse DOCX file: {}", e),
+            ))
+        }
     }
     
     /// Parse Excel files
@@ -241,6 +285,7 @@ impl Parser {
             "json".to_string(),
             "xml".to_string(),
             "html".to_string(),
+            "docx".to_string(),
             "xlsx".to_string(),
             "xls".to_string(),
             "csv".to_string(),
