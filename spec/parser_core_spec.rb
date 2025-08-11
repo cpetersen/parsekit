@@ -50,6 +50,57 @@ RSpec.describe ParserCore do
     end
   end
 
+  describe ".parse_bytes" do
+    it "parses binary data from a string" do
+      result = described_class.parse_bytes("test data")
+      expect(result).to be_a(String)
+      expect(result).to include("test data")
+    end
+
+    it "parses binary data from an array of bytes" do
+      bytes = "test".bytes
+      result = described_class.parse_bytes(bytes)
+      expect(result).to be_a(String)
+      expect(result).to include("test")
+    end
+
+    it "accepts options" do
+      result = described_class.parse_bytes("test", encoding: "UTF-8")
+      expect(result).to be_a(String)
+    end
+  end
+
+  describe ".supported_formats" do
+    it "returns an array of supported file formats" do
+      formats = described_class.supported_formats
+      expect(formats).to be_an(Array)
+      expect(formats).not_to be_empty
+    end
+
+    it "includes common formats" do
+      formats = described_class.supported_formats
+      %w[txt docx xlsx json xml].each do |format|
+        expect(formats).to include(format)
+      end
+    end
+  end
+
+  describe ".supports_file?" do
+    it "returns true for supported file types" do
+      expect(described_class.supports_file?("test.txt")).to be true
+      expect(described_class.supports_file?("document.docx")).to be true
+    end
+
+    it "returns false for unsupported file types" do
+      expect(described_class.supports_file?("image.jpg")).to be false
+      expect(described_class.supports_file?("video.mp4")).to be false
+    end
+
+    it "handles uppercase extensions" do
+      expect(described_class.supports_file?("FILE.TXT")).to be true
+    end
+  end
+
   describe ".native_version" do
     it "returns the native library version" do
       version = described_class.native_version

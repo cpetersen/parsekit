@@ -91,8 +91,8 @@ module ParserCore
     # @param input [String] The input to validate
     # @return [Boolean] True if input is valid
     def valid_input?(input)
-      return false if input.nil? || input.empty?
       return false unless input.is_a?(String)
+      return false if input.empty?
       true
     end
     

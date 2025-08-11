@@ -140,5 +140,140 @@ RSpec.describe ParserCore::Parser do
     it "returns false for empty input" do
       expect(parser.valid_input?("")).to be false
     end
+    
+    it "returns false for non-string input" do
+      expect(parser.valid_input?(123)).to be false
+    end
+  end
+
+  describe "#parse_file_with_block" do
+    let(:parser) { described_class.new }
+    let(:test_file) { "spec/fixtures/test.txt" }
+
+    before do
+      FileUtils.mkdir_p("spec/fixtures")
+      File.write(test_file, "test content")
+    end
+
+    after do
+      FileUtils.rm_rf("spec/fixtures")
+    end
+
+    it "yields the parsed file content to the block" do
+      block_called = false
+      result = parser.parse_file_with_block(test_file) do |content|
+        block_called = true
+        expect(content).to include("test content")
+        "processed: #{content}"
+      end
+      expect(block_called).to be true
+      expect(result).to eq("test content")  # The method returns the parsed content, not the block's return value
+    end
+
+    it "returns the parsed content without a block" do
+      result = parser.parse_file_with_block(test_file)
+      expect(result).to eq("test content")
+    end
+  end
+
+  describe "#valid_file?" do
+    let(:parser) { described_class.new }
+
+    context "with an existing supported file" do
+      let(:test_file) { "spec/fixtures/test.txt" }
+
+      before do
+        FileUtils.mkdir_p("spec/fixtures")
+        File.write(test_file, "content")
+      end
+
+      after do
+        FileUtils.rm_rf("spec/fixtures")
+      end
+
+      it "returns true for existing supported file" do
+        expect(parser.valid_file?(test_file)).to be true
+      end
+    end
+
+    it "returns false for non-existent file" do
+      expect(parser.valid_file?("non_existent.txt")).to be false
+    end
+
+    context "with an unsupported file" do
+      let(:test_file) { "spec/fixtures/test.xyz" }
+
+      before do
+        FileUtils.mkdir_p("spec/fixtures")
+        File.write(test_file, "content")
+      end
+
+      after do
+        FileUtils.rm_rf("spec/fixtures")
+      end
+
+      it "returns false for unsupported file type" do
+        expect(parser.valid_file?(test_file)).to be false
+      end
+    end
+  end
+
+  describe "#file_extension" do
+    let(:parser) { described_class.new }
+
+    it "returns the file extension in lowercase" do
+      expect(parser.file_extension("test.TXT")).to eq("txt")
+    end
+
+    it "returns the extension for complex paths" do
+      expect(parser.file_extension("/path/to/file.docx")).to eq("docx")
+    end
+
+    it "returns nil for files without extension" do
+      expect(parser.file_extension("README")).to be_nil
+    end
+
+    it "handles multiple dots correctly" do
+      expect(parser.file_extension("file.tar.gz")).to eq("gz")
+    end
+  end
+
+  describe "#supports_file?" do
+    let(:parser) { described_class.new }
+
+    it "returns true for supported txt files" do
+      expect(parser.supports_file?("test.txt")).to be true
+    end
+
+    it "returns true for supported docx files" do
+      expect(parser.supports_file?("document.docx")).to be true
+    end
+
+    it "returns true for supported xlsx files" do
+      expect(parser.supports_file?("spreadsheet.xlsx")).to be true
+    end
+
+    it "returns false for unsupported file types" do
+      expect(parser.supports_file?("image.png")).to be false
+    end
+
+    it "handles uppercase extensions" do
+      expect(parser.supports_file?("file.PDF")).to be true
+    end
+  end
+
+  describe ".supported_formats" do
+    it "returns an array of supported formats" do
+      formats = described_class.supported_formats
+      expect(formats).to be_an(Array)
+      expect(formats).to include("txt", "docx", "xlsx", "json", "xml")
+    end
+
+    it "includes all expected formats" do
+      formats = described_class.supported_formats
+      %w[txt json xml html docx xlsx xls csv pdf].each do |format|
+        expect(formats).to include(format)
+      end
+    end
   end
 end

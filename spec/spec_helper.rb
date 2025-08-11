@@ -3,14 +3,25 @@
 # Coverage setup (must be before requiring the gem)
 require "simplecov"
 
-SimpleCov.start do
+# Configure SimpleCov before starting
+SimpleCov.configure do
+  # Set the root to the project directory
+  root File.expand_path("..", __dir__)
+  
+  # Track files even if not loaded during test run
+  track_files "lib/**/*.rb"
+  
   add_filter "/spec/"
   add_filter "/ext/"  # Native extensions can't be tracked
   add_filter "/tmp/"
-  track_files "lib/**/*.rb"
+  add_filter "/.bundle/"
+  add_filter "/vendor/"
+  add_filter %r{/parser_core.bundle}
   
-  add_group "Library", "lib/"
-  add_group "Parser", "lib/parser_core/"
+  add_group "Main", "lib/parser_core.rb"
+  add_group "Parser", "lib/parser_core/parser.rb"
+  add_group "Error", "lib/parser_core/error.rb"
+  add_group "Version", "lib/parser_core/version.rb"
   
   # Set coverage thresholds
   minimum_coverage 60
@@ -22,7 +33,13 @@ SimpleCov.start do
   else
     formatter SimpleCov::Formatter::HTMLFormatter
   end
+  
+  # Enable branch coverage
+  enable_coverage :branch
 end
+
+# Start SimpleCov
+SimpleCov.start
 
 require "bundler/setup"
 require "parser_core"
