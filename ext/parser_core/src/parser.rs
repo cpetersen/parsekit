@@ -74,7 +74,7 @@ impl Parser {
         match file_type.as_str() {
             "pdf" => self.parse_pdf(data),
             "docx" => self.parse_docx(data),
-            "xlsx" | "xls" => self.parse_excel(data),
+            "xlsx" | "xls" => self.parse_xlsx(data),
             "json" => self.parse_json(data),
             "xml" | "html" => self.parse_xml(data),
             "txt" | "text" => self.parse_text(data),
@@ -112,14 +112,14 @@ impl Parser {
         }
     }
     
-    /// Parse PDF files (simplified without OCR)
-    fn parse_pdf(&self, _data: Vec<u8>) -> Result<String, Error> {
+    /// Parse PDF files - exposed to Ruby
+    fn parse_pdf(&self, data: Vec<u8>) -> Result<String, Error> {
         // Note: pdf-extract has issues with system dependencies
         // For now, return a placeholder
         Ok("PDF parsing requires additional system libraries (install with: brew install poppler)".to_string())
     }
     
-    /// Parse DOCX (Word) files
+    /// Parse DOCX (Word) files - exposed to Ruby
     fn parse_docx(&self, data: Vec<u8>) -> Result<String, Error> {
         use docx_rs::read_docx;
         
@@ -158,8 +158,8 @@ impl Parser {
         }
     }
     
-    /// Parse Excel files
-    fn parse_excel(&self, data: Vec<u8>) -> Result<String, Error> {
+    /// Parse Excel files - exposed to Ruby
+    fn parse_xlsx(&self, data: Vec<u8>) -> Result<String, Error> {
         use calamine::{Reader, Xlsx};
         use std::io::Cursor;
         
@@ -191,7 +191,7 @@ impl Parser {
         }
     }
     
-    /// Parse JSON files
+    /// Parse JSON files - exposed to Ruby
     fn parse_json(&self, data: Vec<u8>) -> Result<String, Error> {
         let text = String::from_utf8_lossy(&data);
         match serde_json::from_str::<serde_json::Value>(&text) {
@@ -200,7 +200,7 @@ impl Parser {
         }
     }
     
-    /// Parse XML/HTML files
+    /// Parse XML/HTML files - exposed to Ruby
     fn parse_xml(&self, data: Vec<u8>) -> Result<String, Error> {
         use quick_xml::events::Event;
         use quick_xml::Reader;
@@ -230,7 +230,7 @@ impl Parser {
         Ok(txt.trim().to_string())
     }
     
-    /// Parse plain text with encoding detection
+    /// Parse plain text with encoding detection - exposed to Ruby
     fn parse_text(&self, data: Vec<u8>) -> Result<String, Error> {
         // Detect encoding
         let (decoded, _encoding, malformed) = encoding_rs::UTF_8.decode(&data);
@@ -356,6 +356,14 @@ pub fn init(_ruby: &Ruby, module: RModule) -> Result<(), Error> {
     class.define_method("config", method!(Parser::config, 0))?;
     class.define_method("strict_mode?", method!(Parser::strict_mode, 0))?;
     class.define_method("supports_file?", method!(Parser::supports_file, 1))?;
+    
+    // Individual parser methods exposed to Ruby
+    class.define_method("parse_pdf", method!(Parser::parse_pdf, 1))?;
+    class.define_method("parse_docx", method!(Parser::parse_docx, 1))?;
+    class.define_method("parse_xlsx", method!(Parser::parse_xlsx, 1))?;
+    class.define_method("parse_json", method!(Parser::parse_json, 1))?;
+    class.define_method("parse_xml", method!(Parser::parse_xml, 1))?;
+    class.define_method("parse_text", method!(Parser::parse_text, 1))?;
     
     // Class methods
     class.define_singleton_method("supported_formats", function!(Parser::supported_formats, 0))?;

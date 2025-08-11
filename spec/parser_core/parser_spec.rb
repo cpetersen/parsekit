@@ -276,4 +276,179 @@ RSpec.describe ParserCore::Parser do
       end
     end
   end
+
+  describe "#detect_format" do
+    let(:parser) { described_class.new }
+
+    it "detects DOCX files" do
+      expect(parser.detect_format("document.docx")).to eq(:docx)
+    end
+
+    it "detects Excel files" do
+      expect(parser.detect_format("spreadsheet.xlsx")).to eq(:xlsx)
+      expect(parser.detect_format("old.xls")).to eq(:xlsx)
+    end
+
+    it "detects PDF files" do
+      expect(parser.detect_format("document.pdf")).to eq(:pdf)
+    end
+
+    it "detects JSON files" do
+      expect(parser.detect_format("data.json")).to eq(:json)
+    end
+
+    it "detects XML and HTML files" do
+      expect(parser.detect_format("data.xml")).to eq(:xml)
+      expect(parser.detect_format("page.html")).to eq(:xml)
+    end
+
+    it "detects text files" do
+      expect(parser.detect_format("readme.txt")).to eq(:text)
+      expect(parser.detect_format("readme.md")).to eq(:text)
+      expect(parser.detect_format("readme.markdown")).to eq(:text)
+    end
+
+    it "defaults to text for unknown extensions" do
+      expect(parser.detect_format("unknown.xyz")).to eq(:text)
+    end
+
+    it "returns nil for files without extension" do
+      expect(parser.detect_format("README")).to be_nil
+    end
+  end
+
+  describe "#detect_format_from_bytes" do
+    let(:parser) { described_class.new }
+
+    it "detects PDF from magic bytes" do
+      pdf_bytes = [0x25, 0x50, 0x44, 0x46] + [0x00] * 10  # %PDF
+      expect(parser.detect_format_from_bytes(pdf_bytes)).to eq(:pdf)
+    end
+
+    it "detects ZIP/Office formats from magic bytes" do
+      zip_bytes = [0x50, 0x4B] + [0x00] * 10  # PK
+      expect(parser.detect_format_from_bytes(zip_bytes)).to eq(:xlsx)
+    end
+
+    it "detects old Excel from magic bytes" do
+      xls_bytes = [0xD0, 0xCF, 0x11, 0xE0] + [0x00] * 10
+      expect(parser.detect_format_from_bytes(xls_bytes)).to eq(:xlsx)
+    end
+
+    it "detects XML from magic bytes" do
+      xml_bytes = [0x3C, 0x3F, 0x78, 0x6D, 0x6C] + [0x00] * 10  # <?xml
+      expect(parser.detect_format_from_bytes(xml_bytes)).to eq(:xml)
+    end
+
+    it "detects HTML from magic bytes" do
+      html_bytes = [0x3C, 0x68, 0x74, 0x6D, 0x6C] + [0x00] * 10  # <html
+      expect(parser.detect_format_from_bytes(html_bytes)).to eq(:xml)
+    end
+
+    it "detects JSON from magic bytes" do
+      json_object_bytes = [0x7B] + [0x00] * 10  # {
+      json_array_bytes = [0x5B] + [0x00] * 10   # [
+      expect(parser.detect_format_from_bytes(json_object_bytes)).to eq(:json)
+      expect(parser.detect_format_from_bytes(json_array_bytes)).to eq(:json)
+    end
+
+    it "defaults to text for unknown formats" do
+      unknown_bytes = [0x41, 0x42, 0x43]  # ABC
+      expect(parser.detect_format_from_bytes(unknown_bytes)).to eq(:text)
+    end
+
+    it "handles string input" do
+      pdf_string = "%PDF-1.4"
+      expect(parser.detect_format_from_bytes(pdf_string)).to eq(:pdf)
+    end
+
+    it "returns text for empty data" do
+      expect(parser.detect_format_from_bytes([])).to eq(:text)
+      expect(parser.detect_format_from_bytes("")).to eq(:text)
+    end
+  end
+
+  describe "individual parser methods" do
+    let(:parser) { described_class.new }
+
+    describe "#parse_json" do
+      it "parses JSON data" do
+        json_data = '{"key": "value"}'.bytes
+        result = parser.parse_json(json_data)
+        expect(result).to include("key")
+        expect(result).to include("value")
+      end
+    end
+
+    describe "#parse_text" do
+      it "parses text data" do
+        text_data = "Hello, World!".bytes
+        result = parser.parse_text(text_data)
+        expect(result).to eq("Hello, World!")
+      end
+    end
+
+    describe "#parse_xml" do
+      it "parses XML data" do
+        xml_data = '<?xml version="1.0"?><root><item>test</item></root>'.bytes
+        result = parser.parse_xml(xml_data)
+        expect(result).to include("test")
+      end
+    end
+
+    describe "#parse_docx" do
+      it "exists as a method" do
+        expect(parser).to respond_to(:parse_docx)
+      end
+    end
+
+    describe "#parse_xlsx" do
+      it "exists as a method" do
+        expect(parser).to respond_to(:parse_xlsx)
+      end
+    end
+
+    describe "#parse_pdf" do
+      it "exists as a method" do
+        expect(parser).to respond_to(:parse_pdf)
+      end
+    end
+  end
+
+  describe "#parse_file_routed" do
+    let(:parser) { described_class.new }
+    let(:test_file) { "spec/fixtures/test.json" }
+
+    before do
+      FileUtils.mkdir_p("spec/fixtures")
+      File.write(test_file, '{"test": "data"}')
+    end
+
+    after do
+      FileUtils.rm_rf("spec/fixtures")
+    end
+
+    it "routes to the correct parser based on extension" do
+      result = parser.parse_file_routed(test_file)
+      expect(result).to include("test")
+      expect(result).to include("data")
+    end
+  end
+
+  describe "#parse_bytes_routed" do
+    let(:parser) { described_class.new }
+
+    it "routes JSON data to JSON parser" do
+      json_data = '{"key": "value"}'
+      result = parser.parse_bytes_routed(json_data)
+      expect(result).to include("key")
+      expect(result).to include("value")
+    end
+
+    it "routes text data to text parser" do
+      text_data = "Plain text content"
+      result = parser.parse_bytes_routed(text_data)
+      expect(result).to eq("Plain text content")
+    end
+  end
 end

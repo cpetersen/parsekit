@@ -2,6 +2,9 @@
 
 module ParserCore
   # Ruby wrapper for the native Parser class
+  #
+  # The Ruby layer now handles format detection and routing to specific parsers,
+  # while Rust provides the actual parsing implementations.
   class Parser
     # These methods are implemented in the native extension
     # and are documented here for YARD
@@ -75,6 +78,89 @@ module ParserCore
       result = parse_file(path)
       yield result if block_given?
       result
+    end
+    
+    # Detect format from file path
+    # @param path [String] File path
+    # @return [Symbol, nil] Format symbol or nil if unknown
+    def detect_format(path)
+      ext = file_extension(path)
+      return nil unless ext
+      
+      case ext.downcase
+      when 'docx' then :docx
+      when 'xlsx', 'xls' then :xlsx
+      when 'pdf' then :pdf
+      when 'json' then :json
+      when 'xml', 'html' then :xml
+      when 'txt', 'text', 'md', 'markdown' then :text
+      when 'csv' then :text  # CSV is handled as text for now
+      else :text  # Default to text
+      end
+    end
+    
+    # Detect format from binary data
+    # @param data [String, Array<Integer>] Binary data
+    # @return [Symbol] Format symbol
+    def detect_format_from_bytes(data)
+      # Convert to bytes if string
+      bytes = data.is_a?(String) ? data.bytes : data
+      return :text if bytes.empty?
+      
+      # Check magic bytes
+      if bytes[0..3] == [0x25, 0x50, 0x44, 0x46]  # %PDF
+        :pdf
+      elsif bytes[0..1] == [0x50, 0x4B]  # PK (ZIP archive)
+        # Could be DOCX or XLSX, default to xlsx for now
+        # In the future, could inspect ZIP contents to determine
+        :xlsx
+      elsif bytes[0..3] == [0xD0, 0xCF, 0x11, 0xE0]  # Old Excel
+        :xlsx
+      elsif bytes[0..4] == [0x3C, 0x3F, 0x78, 0x6D, 0x6C]  # <?xml
+        :xml
+      elsif bytes[0..4] == [0x3C, 0x68, 0x74, 0x6D, 0x6C]  # <html
+        :xml
+      elsif bytes[0] == 0x7B || bytes[0] == 0x5B  # { or [
+        :json
+      else
+        :text
+      end
+    end
+    
+    # Parse file using format-specific parser
+    # This method now detects format and routes to the appropriate parser
+    # @param path [String] File path
+    # @return [String] Parsed content
+    def parse_file_routed(path)
+      format = detect_format(path)
+      data = File.read(path, mode: 'rb').bytes
+      
+      case format
+      when :docx then parse_docx(data)
+      when :xlsx then parse_xlsx(data) 
+      when :pdf then parse_pdf(data)
+      when :json then parse_json(data)
+      when :xml then parse_xml(data)
+      else parse_text(data)
+      end
+    end
+    
+    # Parse bytes using format-specific parser
+    # This method detects format and routes to the appropriate parser
+    # @param data [String, Array<Integer>] Binary data
+    # @return [String] Parsed content
+    def parse_bytes_routed(data)
+      format = detect_format_from_bytes(data)
+      bytes = data.is_a?(String) ? data.bytes : data
+      
+      case format
+      when :docx then parse_docx(bytes)
+      when :xlsx then parse_xlsx(bytes)
+      when :pdf then parse_pdf(bytes)
+      when :json then parse_json(bytes)
+      when :xml then parse_xml(bytes)
+      else parse_text(bytes)
+      end
     end
     
     # Parse with a block for processing results
