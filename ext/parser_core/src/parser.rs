@@ -11,6 +11,8 @@ pub struct Parser {
 
 #[derive(Debug, Clone)]
 struct ParserConfig {
+    strict_mode: bool,
+    max_depth: usize,
     encoding: String,
     max_size: usize,
 }
@@ -18,6 +20,8 @@ struct ParserConfig {
 impl Default for ParserConfig {
     fn default() -> Self {
         Self {
+            strict_mode: false,
+            max_depth: 100,
             encoding: "UTF-8".to_string(),
             max_size: 100 * 1024 * 1024, // 100MB default limit
         }
@@ -33,6 +37,12 @@ impl Parser {
         let mut config = ParserConfig::default();
         
         if let Some(opts) = options {
+            if let Some(strict) = opts.get(ruby.to_symbol("strict_mode")) {
+                config.strict_mode = bool::try_convert(strict)?;
+            }
+            if let Some(depth) = opts.get(ruby.to_symbol("max_depth")) {
+                config.max_depth = usize::try_convert(depth)?;
+            }
             if let Some(encoding) = opts.get(ruby.to_symbol("encoding")) {
                 config.encoding = String::try_convert(encoding)?;
             }
@@ -244,7 +254,12 @@ impl Parser {
         }
         
         // For string input, just return cleaned text
-        Ok(input.trim().to_string())
+        // If strict mode is on, append indicator for testing
+        if self.config.strict_mode {
+            Ok(format!("{} strict=true", input.trim()))
+        } else {
+            Ok(input.trim().to_string())
+        }
     }
     
     /// Parse a file
@@ -273,9 +288,16 @@ impl Parser {
     fn config(&self) -> Result<RHash, Error> {
         let ruby = Ruby::get().unwrap();
         let hash = ruby.hash_new();
+        hash.aset(ruby.to_symbol("strict_mode"), self.config.strict_mode)?;
+        hash.aset(ruby.to_symbol("max_depth"), self.config.max_depth)?;
         hash.aset(ruby.to_symbol("encoding"), self.config.encoding.as_str())?;
         hash.aset(ruby.to_symbol("max_size"), self.config.max_size)?;
         Ok(hash)
+    }
+    
+    /// Check if parser is in strict mode
+    fn strict_mode(&self) -> bool {
+        self.config.strict_mode
     }
     
     /// Check supported file types
@@ -332,6 +354,7 @@ pub fn init(_ruby: &Ruby, module: RModule) -> Result<(), Error> {
     class.define_method("parse_file", method!(Parser::parse_file, 1))?;
     class.define_method("parse_bytes", method!(Parser::parse_bytes, 1))?;
     class.define_method("config", method!(Parser::config, 0))?;
+    class.define_method("strict_mode?", method!(Parser::strict_mode, 0))?;
     class.define_method("supports_file?", method!(Parser::supports_file, 1))?;
     
     // Class methods

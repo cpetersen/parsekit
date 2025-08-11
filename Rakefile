@@ -95,6 +95,11 @@ namespace :dev do
     Rake::Task["spec"].invoke
   end
   
+  desc "Open coverage report in browser"
+  task :coverage_open do
+    system "open coverage/index.html"
+  end
+  
   desc "Open console with gem loaded"
   task :console do
     require "irb"

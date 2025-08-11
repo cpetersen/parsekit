@@ -60,6 +60,13 @@ module ParserCore
     
     # Ruby-level helper methods
     
+    # Create a parser with strict mode enabled
+    # @param options [Hash] Additional options
+    # @return [Parser] A new parser instance with strict mode
+    def self.strict(options = {})
+      new(options.merge(strict_mode: true))
+    end
+    
     # Parse a file with a block for processing results
     # @param path [String] Path to the file to parse
     # @yield [result] Yields the parsed result for processing
