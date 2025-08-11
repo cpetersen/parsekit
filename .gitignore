@@ -39,6 +39,8 @@ Thumbs.db
 /lib/parser_core/*.bundle
 /lib/parser_core/*.so
 /lib/parser_core/*.dll
+/ext/**/Makefile
+/ext/**/mkmf.log
 
 # Documentation
 /.yard/
