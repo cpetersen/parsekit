@@ -35,7 +35,7 @@ module ParserCore
     # @return [String] The extracted text content
     # @raise [ArgumentError] If data is empty
     # @raise [RuntimeError] If parsing fails
-    # def parse_data(data)
+    # def parse_bytes(data)
     #   # Implemented in native extension
     # end
     

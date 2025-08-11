@@ -44,8 +44,8 @@ impl Parser {
         Ok(Self { config })
     }
     
-    /// Parse input bytes based on file type
-    fn parse_bytes(&self, data: Vec<u8>, filename: Option<&str>) -> Result<String, Error> {
+    /// Parse input bytes based on file type (internal helper)
+    fn parse_bytes_internal(&self, data: Vec<u8>, filename: Option<&str>) -> Result<String, Error> {
         // Check size limit
         if data.len() > self.config.max_size {
             return Err(Error::new(
@@ -210,11 +210,11 @@ impl Parser {
         let data = fs::read(&path)
             .map_err(|e| Error::new(magnus::exception::io_error(), format!("Failed to read file: {}", e)))?;
         
-        self.parse_bytes(data, Some(&path))
+        self.parse_bytes_internal(data, Some(&path))
     }
     
     /// Parse bytes from Ruby
-    fn parse_data(&self, data: Vec<u8>) -> Result<String, Error> {
+    fn parse_bytes(&self, data: Vec<u8>) -> Result<String, Error> {
         if data.is_empty() {
             return Err(Error::new(
                 magnus::exception::arg_error(),
@@ -222,7 +222,7 @@ impl Parser {
             ));
         }
         
-        self.parse_bytes(data, None)
+        self.parse_bytes_internal(data, None)
     }
     
     /// Get parser configuration
@@ -270,11 +270,11 @@ fn parse_file_direct(path: String) -> Result<String, Error> {
 }
 
 /// Module-level convenience function for parsing binary data
-fn parse_data_direct(data: Vec<u8>) -> Result<String, Error> {
+fn parse_bytes_direct(data: Vec<u8>) -> Result<String, Error> {
     let parser = Parser {
         config: ParserConfig::default(),
     };
-    parser.parse_bytes(data, None)
+    parser.parse_bytes_internal(data, None)
 }
 
 /// Initialize the Parser class
@@ -285,7 +285,7 @@ pub fn init(_ruby: &Ruby, module: RModule) -> Result<(), Error> {
     class.define_singleton_method("new", function!(Parser::new, -1))?;
     class.define_method("parse", method!(Parser::parse, 1))?;
     class.define_method("parse_file", method!(Parser::parse_file, 1))?;
-    class.define_method("parse_data", method!(Parser::parse_data, 1))?;
+    class.define_method("parse_bytes", method!(Parser::parse_bytes, 1))?;
     class.define_method("config", method!(Parser::config, 0))?;
     class.define_method("supports_file?", method!(Parser::supports_file, 1))?;
     
@@ -294,7 +294,7 @@ pub fn init(_ruby: &Ruby, module: RModule) -> Result<(), Error> {
     
     // Module-level convenience methods
     module.define_singleton_method("parse_file", function!(parse_file_direct, 1))?;
-    module.define_singleton_method("parse_data", function!(parse_data_direct, 1))?;
+    module.define_singleton_method("parse_bytes", function!(parse_bytes_direct, 1))?;
     
     Ok(())
 }
