@@ -59,7 +59,7 @@ RSpec.describe ParserCore::Parser do
     end
 
     after do
-      FileUtils.rm_rf("spec/fixtures")
+      FileUtils.rm_f(test_file) if File.exist?(test_file)
     end
 
     it "parses file content" do
@@ -156,7 +156,7 @@ RSpec.describe ParserCore::Parser do
     end
 
     after do
-      FileUtils.rm_rf("spec/fixtures")
+      FileUtils.rm_f(test_file) if File.exist?(test_file)
     end
 
     it "yields the parsed file content to the block" do
@@ -188,7 +188,7 @@ RSpec.describe ParserCore::Parser do
       end
 
       after do
-        FileUtils.rm_rf("spec/fixtures")
+        FileUtils.rm_f(test_file) if File.exist?(test_file)
       end
 
       it "returns true for existing supported file" do
@@ -209,7 +209,7 @@ RSpec.describe ParserCore::Parser do
       end
 
       after do
-        FileUtils.rm_rf("spec/fixtures")
+        FileUtils.rm_f(test_file) if File.exist?(test_file)
       end
 
       it "returns false for unsupported file type" do
@@ -425,7 +425,7 @@ RSpec.describe ParserCore::Parser do
     end
 
     after do
-      FileUtils.rm_rf("spec/fixtures")
+      FileUtils.rm_f(test_file) if File.exist?(test_file)
     end
 
     it "routes to the correct parser based on extension" do

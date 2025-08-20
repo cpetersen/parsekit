@@ -36,7 +36,7 @@ RSpec.describe ParserCore do
     end
 
     after do
-      FileUtils.rm_rf("spec/fixtures")
+      FileUtils.rm_f(test_file) if File.exist?(test_file)
     end
 
     it "parses a file" do
