@@ -46,3 +46,4 @@ Thumbs.db
 
 # Test artifacts
 /spec/examples.txt
+ext/parser_core/Makefile
