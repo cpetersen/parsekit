@@ -3,4 +3,4 @@
 require "mkmf"
 require "rb_sys/mkmf"
 
-create_rust_makefile("parser_core/parser_core")
+create_rust_makefile("parsekit/parsekit")

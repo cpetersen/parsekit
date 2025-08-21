@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe "PDF Parsing with MuPDF" do
-  let(:parser) { ParserCore::Parser.new }
+  let(:parser) { ParseKit::Parser.new }
   
   describe "#parse_pdf" do
     context "with valid PDF data" do
@@ -226,7 +226,7 @@ RSpec.describe "PDF Parsing with MuPDF" do
   
   describe "PDF support verification" do
     it "includes pdf in supported formats" do
-      formats = ParserCore::Parser.supported_formats
+      formats = ParseKit::Parser.supported_formats
       expect(formats).to include("pdf")
     end
     
@@ -237,7 +237,7 @@ RSpec.describe "PDF Parsing with MuPDF" do
   end
   
   describe "Performance and size limits" do
-    let(:parser_with_limit) { ParserCore::Parser.new(max_size: 100) } # 100 bytes limit
+    let(:parser_with_limit) { ParseKit::Parser.new(max_size: 100) } # 100 bytes limit
     
     it "respects max_size configuration" do
       # Create a valid but large PDF that exceeds the size limit

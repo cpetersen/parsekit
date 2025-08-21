@@ -1,315 +1,157 @@
-# ParserCore Ruby (no-parser-core branch)
+# ParseKit
 
-[![CI](https://github.com/cpetersen/parser-core-ruby/actions/workflows/ci.yml/badge.svg)](https://github.com/cpetersen/parser-core-ruby/actions/workflows/ci.yml)
-[![Gem Version](https://badge.fury.io/rb/parser-core-ruby.svg)](https://badge.fury.io/rb/parser-core-ruby)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-Pure Rust document parsing for Ruby without external dependencies. This branch provides document parsing capabilities using only pure Rust libraries, avoiding external system dependencies like Tesseract or Poppler.
+ParseKit is a Ruby document parsing toolkit with zero runtime dependencies. It provides high-performance parsing for various document formats including PDF, DOCX, XLSX, and images with OCR support.
 
 ## Features
 
-- 🚀 **Pure Rust Implementation**: No external system dependencies required
-- 📄 **Multiple Format Support**: Parse TXT, JSON, XML, HTML, DOCX, XLSX, CSV, and Markdown files
-- 🔧 **Flexible Architecture**: Ruby handles routing, Rust handles parsing
-- 🛡️ **Type Safe**: Strong typing through Rust with Ruby's dynamic nature
-- 📦 **Cross-Platform**: Works on Linux, macOS, and Windows
-- 🧪 **Well Tested**: 87% code coverage with comprehensive test suite
-
-## Quick Start
-
-```ruby
-require 'parser_core'
-
-# Basic text parsing
-text_content = "Hello, World!"
-result = ParserCore.parse(text_content)
-puts result  # => "Hello, World!"
-
-# Parse files - change this path to your file
-file_path = "/path/to/your/document.txt"  # Change this to your file
-
-# Create a parser instance
-parser = ParserCore::Parser.new
-
-# Parse different file types
-if File.exist?(file_path)
-  result = parser.parse_file(file_path)
-  puts "Parsed content: #{result}"
-  
-  # Check what format was detected
-  format = parser.detect_format(file_path)
-  puts "Detected format: #{format}"
-end
-
-# Parse JSON data
-json_data = '{"name": "Ruby", "type": "language"}'
-json_result = parser.parse_json(json_data.bytes)
-puts json_result  # Pretty-printed JSON
-
-# Parse XML/HTML
-xml_data = '<root><item>Content</item></root>'
-xml_result = parser.parse_xml(xml_data.bytes)
-puts xml_result  # => "Content"
-
-# Parse Excel files (if you have one)
-xlsx_path = "/path/to/spreadsheet.xlsx"  # Change this to your Excel file
-if File.exist?(xlsx_path)
-  excel_result = parser.parse_file(xlsx_path)
-  puts excel_result  # Will show sheet structure with data
-end
-
-# Parse DOCX files (if you have one)
-docx_path = "/path/to/document.docx"  # Change this to your Word file
-if File.exist?(docx_path)
-  docx_result = parser.parse_file(docx_path)
-  puts docx_result  # Will show extracted text content
-end
-```
+- **Zero Runtime Dependencies**: All libraries are statically linked - just `gem install` and go!
+- **PDF Text Extraction**: Uses statically-linked MuPDF for reliable PDF parsing
+- **OCR Support**: Embedded Tesseract for text extraction from images (PNG, JPEG, BMP, TIFF)
+- **Office Documents**: Parse DOCX and XLSX files using pure Rust implementations
+- **Multiple Formats**: Supports TXT, JSON, XML, HTML, CSV, and more
+- **High Performance**: Native Rust implementation via Magnus FFI bindings
+- **Cross-Platform**: Works on macOS, Linux, and Windows
 
 ## Installation
 
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'parser-core-ruby'
+gem 'parsekit'
 ```
 
 And then execute:
 
-```bash
-bundle install
-```
+    $ bundle install
 
 Or install it yourself as:
 
-```bash
-gem install parser-core-ruby
-```
+    $ gem install parsekit
 
-### Requirements
+## Usage
 
-- Ruby >= 3.0.0
-- Rust toolchain (stable)
-- C compiler (for linking)
-
-## Supported Formats
-
-| Format | Extension | Status | Notes |
-|--------|-----------|--------|-------|
-| Plain Text | .txt, .text | ✅ Full | UTF-8 with encoding detection |
-| JSON | .json | ✅ Full | Pretty-printing support |
-| XML | .xml | ✅ Full | Text extraction |
-| HTML | .html | ✅ Full | Text extraction |
-| Markdown | .md, .markdown | ✅ Full | Treated as text |
-| CSV | .csv | ✅ Full | Treated as text |
-| DOCX | .docx | ✅ Full | Text extraction from Word documents |
-| XLSX | .xlsx, .xls | ✅ Full | Sheet structure and data extraction |
-| PDF | .pdf | ⚠️ Limited | Requires external poppler library |
-
-## Usage Examples
-
-### Basic Parsing
+### Basic Usage
 
 ```ruby
-require 'parser_core'
+require 'parsekit'
 
-# Simple text parsing
-parser = ParserCore::Parser.new
-result = parser.parse("Hello, World!")
-puts result  # => "Hello, World!"
+# Create a parser instance
+parser = ParseKit::Parser.new
 
-# Parse with strict mode
-strict_parser = ParserCore::Parser.strict
-result = strict_parser.parse("Test")
-puts result  # => "Test strict=true"
-```
+# Parse various file types
+pdf_text = parser.parse_file('document.pdf')
+docx_text = parser.parse_file('document.docx')
+xlsx_text = parser.parse_file('spreadsheet.xlsx')
 
-### File Parsing
+# OCR images
+image_text = parser.parse_file('scanned_document.png')
 
-```ruby
-# Parse any supported file
-parser = ParserCore::Parser.new
-
-# The parser automatically detects the format
-result = parser.parse_file("document.txt")
-result = parser.parse_file("data.json")
-result = parser.parse_file("spreadsheet.xlsx")
-result = parser.parse_file("document.docx")
-
-# You can also use the routed methods for explicit control
-result = parser.parse_file_routed("document.txt")  # Uses format detection
-```
-
-### Format Detection
-
-```ruby
-parser = ParserCore::Parser.new
-
-# Detect format from file extension
-format = parser.detect_format("document.docx")  # => :docx
-format = parser.detect_format("data.json")      # => :json
-format = parser.detect_format("sheet.xlsx")     # => :xlsx
-
-# Detect format from file content (magic bytes)
-pdf_content = "%PDF-1.4..."
-format = parser.detect_format_from_bytes(pdf_content)  # => :pdf
-
-json_content = '{"key": "value"}'
-format = parser.detect_format_from_bytes(json_content)  # => :json
-```
-
-### Direct Parser Methods
-
-```ruby
-parser = ParserCore::Parser.new
-
-# Call specific parsers directly
-text_result = parser.parse_text("Hello".bytes)
-json_result = parser.parse_json('{"test": true}'.bytes)
-xml_result = parser.parse_xml('<root>Content</root>'.bytes)
-
-# For binary formats, read the file first
-if File.exist?("document.docx")
-  docx_data = File.read("document.docx", mode: 'rb').bytes
-  result = parser.parse_docx(docx_data)
-end
+# Parse raw text
+text = parser.parse("Hello, World!")
 ```
 
 ### Module-Level Convenience Methods
 
 ```ruby
-# Parse files without creating a parser instance
-result = ParserCore.parse_file("document.txt")
+# Parse files directly
+content = ParseKit.parse_file('document.pdf')
 
-# Parse bytes directly
-data = File.read("document.txt", mode: 'rb')
-result = ParserCore.parse_bytes(data.bytes)
+# Parse bytes
+data = File.read('document.pdf', mode: 'rb')
+content = ParseKit.parse_bytes(data.bytes)
+
+# Check supported formats
+formats = ParseKit.supported_formats
+# => ["txt", "json", "xml", "html", "docx", "xlsx", "xls", "csv", "pdf", "png", "jpg", "jpeg", "tiff", "bmp"]
+
+# Check if a file is supported
+ParseKit.supports_file?('document.pdf')  # => true
 ```
 
-### Error Handling
+### Configuration Options
 
 ```ruby
-begin
-  parser = ParserCore::Parser.new
-  result = parser.parse_file("nonexistent.txt")
-rescue IOError => e
-  puts "File error: #{e.message}"
-end
+# Create parser with options
+parser = ParseKit::Parser.new(
+  strict_mode: true,
+  max_size: 50 * 1024 * 1024,  # 50MB limit
+  encoding: 'UTF-8'
+)
 
-begin
-  result = parser.parse("")
-rescue ArgumentError => e
-  puts "Invalid input: #{e.message}"
-end
+# Or use the strict convenience method
+parser = ParseKit::Parser.strict
 ```
 
-### Working with Different Encodings
+### Format-Specific Parsing
 
 ```ruby
-parser = ParserCore::Parser.new(encoding: "UTF-8")
+parser = ParseKit::Parser.new
 
-# The parser handles various encodings automatically
-content = "Hello 世界 🌍 Здравствуй мир"
-result = parser.parse(content)
-puts result  # Properly handles UTF-8 content
+# Direct access to format-specific parsers
+pdf_data = File.read('document.pdf', mode: 'rb').bytes
+pdf_text = parser.parse_pdf(pdf_data)
+
+image_data = File.read('image.png', mode: 'rb').bytes
+ocr_text = parser.ocr_image(image_data)
+
+excel_data = File.read('data.xlsx', mode: 'rb').bytes
+excel_text = parser.parse_xlsx(excel_data)
+```
+
+## Supported Formats
+
+| Format | Extensions | Method | Notes |
+|--------|------------|--------|-------|
+| PDF | .pdf | `parse_pdf` | Text extraction via MuPDF |
+| Word | .docx | `parse_docx` | Office Open XML format |
+| Excel | .xlsx, .xls | `parse_xlsx` | Both modern and legacy formats |
+| Images | .png, .jpg, .jpeg, .tiff, .bmp | `ocr_image` | OCR via embedded Tesseract |
+| JSON | .json | `parse_json` | Pretty-printed output |
+| XML/HTML | .xml, .html | `parse_xml` | Extracts text content |
+| Text | .txt, .csv, .md | `parse_text` | With encoding detection |
+
+## Performance
+
+ParseKit is built with performance in mind:
+
+- Native Rust implementation for speed
+- Statically linked C libraries (MuPDF, Tesseract) compiled with optimizations
+- Efficient memory usage with streaming where possible
+- Configurable size limits to prevent memory issues
+
+## Development
+
+After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests.
+
+To compile the Rust extension:
+
+```bash
+rake compile
+```
+
+To run tests with coverage:
+
+```bash
+rake dev:coverage
 ```
 
 ## Architecture
 
-This branch uses a clean separation of concerns:
+ParseKit uses a hybrid Ruby/Rust architecture:
 
-- **Ruby Layer**: Handles format detection and routing to appropriate parsers
-- **Rust Layer**: Provides pure parsing implementations without external dependencies
-
-```
-┌─────────────────┐
-│   Ruby Layer    │  Format detection & routing
-├─────────────────┤
-│  Magnus Bridge  │  Ruby-Rust bindings
-├─────────────────┤
-│   Rust Parsers  │  Pure Rust implementations
-└─────────────────┘
-```
-
-### Key Design Decisions
-
-1. **No External Dependencies**: Uses only pure Rust crates
-2. **Format Detection**: Ruby layer detects format from extension or magic bytes
-3. **Direct Parser Access**: Individual parsers can be called directly for performance
-4. **Graceful Degradation**: PDF support notes limitation without poppler
-
-## Development
-
-### Setup
-
-```bash
-bundle install
-bundle exec rake compile
-```
-
-### Running Tests
-
-```bash
-# Run all tests
-bundle exec rake spec
-
-# Run with coverage report
-COVERAGE=true bundle exec rspec
-
-# Run specific test file
-bundle exec rspec spec/parser_core/simple_parsing_spec.rb
-```
-
-### Test Coverage
-
-Current coverage: **87% line coverage**, **85% branch coverage**
-
-### Building
-
-```bash
-# Build the native extension
-bundle exec rake compile
-
-# Build the gem
-gem build parser-core-ruby.gemspec
-```
-
-## Known Limitations
-
-1. **PDF Parsing**: Requires external poppler library (not included in pure Rust implementation)
-2. **DOCX/XLSX Detection**: Both use ZIP format, so content-based detection defaults to XLSX
-3. **OCR**: Not available without external Tesseract dependency
-
-## Performance
-
-The pure Rust implementation provides excellent performance:
-
-- **Text Parsing**: Near-instant for files under 100MB
-- **JSON Parsing**: Includes pretty-printing with minimal overhead
-- **Excel Parsing**: Efficiently extracts sheet structure and data
-- **DOCX Parsing**: Fast text extraction from Word documents
+- **Ruby Layer**: Provides convenient API and format detection
+- **Rust Layer**: Implements high-performance parsing using:
+  - MuPDF for PDF text extraction (statically linked)
+  - rusty-tesseract for OCR (with embedded Tesseract)
+  - Pure Rust libraries for DOCX/XLSX parsing
+  - Magnus for Ruby-Rust FFI bindings
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/cpetersen/parser-core-ruby.
-
-### Development Process
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests (`bundle exec rake spec`)
-5. Ensure coverage remains above 60% (`COVERAGE=true bundle exec rspec`)
-6. Commit your changes
-7. Push to the branch
-8. Open a Pull Request
+Bug reports and pull requests are welcome on GitHub at https://github.com/cpetersen/parsekit.
 
 ## License
 
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
 
-## Acknowledgments
-
-- [Magnus](https://github.com/matsadler/magnus) for excellent Ruby-Rust bindings
-- Pure Rust crate authors: `docx-rs`, `calamine`, `quick-xml`, `serde_json`
-- The ruby-nlp ecosystem contributors
+Note: This gem includes statically linked versions of MuPDF (AGPL/Commercial) and Tesseract (Apache 2.0). Please review their respective licenses for compliance with your use case.

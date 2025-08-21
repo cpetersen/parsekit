@@ -4,7 +4,7 @@ require 'spec_helper'
 require 'tempfile'
 
 RSpec.describe "Simple File Parsing" do
-  let(:parser) { ParserCore::Parser.new }
+  let(:parser) { ParseKit::Parser.new }
 
   describe "text file parsing" do
     it "parses text files correctly" do
@@ -208,14 +208,14 @@ RSpec.describe "Simple File Parsing" do
         file.write(content)
         file.rewind
         
-        result = ParserCore.parse_file(file.path)
+        result = ParseKit.parse_file(file.path)
         expect(result).to eq(content)
       end
     end
 
     it "provides parse_bytes at module level" do
       content = "Byte parsing at module level"
-      result = ParserCore.parse_bytes(content.bytes)
+      result = ParseKit.parse_bytes(content.bytes)
       expect(result).to eq(content)
     end
   end

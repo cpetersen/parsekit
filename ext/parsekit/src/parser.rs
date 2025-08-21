@@ -4,7 +4,7 @@ use magnus::{
 use std::path::Path;
 
 #[derive(Debug, Clone)]
-#[magnus::wrap(class = "ParserCore::Parser", free_immediately, size)]
+#[magnus::wrap(class = "ParseKit::Parser", free_immediately, size)]
 pub struct Parser {
     config: ParserConfig,
 }

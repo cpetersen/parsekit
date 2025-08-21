@@ -16,12 +16,12 @@ SimpleCov.configure do
   add_filter "/tmp/"
   add_filter "/.bundle/"
   add_filter "/vendor/"
-  add_filter %r{/parser_core.bundle}
+  add_filter %r{/parsekit.bundle}
   
-  add_group "Main", "lib/parser_core.rb"
-  add_group "Parser", "lib/parser_core/parser.rb"
-  add_group "Error", "lib/parser_core/error.rb"
-  add_group "Version", "lib/parser_core/version.rb"
+  add_group "Main", "lib/parsekit.rb"
+  add_group "Parser", "lib/parsekit/parser.rb"
+  add_group "Error", "lib/parsekit/error.rb"
+  add_group "Version", "lib/parsekit/version.rb"
   
   # Set coverage thresholds
   minimum_coverage 60
@@ -42,7 +42,7 @@ end
 SimpleCov.start
 
 require "bundler/setup"
-require "parser_core"
+require "parsekit"
 
 # Support files
 Dir[File.join(__dir__, "support", "**", "*.rb")].sort.each { |f| require f }
@@ -66,7 +66,7 @@ RSpec.configure do |config|
   config.filter_gems_from_backtrace("bundler")
   
   # Add custom matchers, helpers, etc.
-  config.include ParserCoreHelpers if defined?(ParserCoreHelpers)
+  config.include ParseKitHelpers if defined?(ParseKitHelpers)
 
   # Hooks
   config.before(:suite) do

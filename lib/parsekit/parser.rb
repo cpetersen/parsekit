@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module ParserCore
+module ParseKit
   # Ruby wrapper for the native Parser class
   #
   # The Ruby layer now handles format detection and routing to specific parsers,

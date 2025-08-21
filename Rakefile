@@ -8,11 +8,11 @@ require "rspec/core/rake_task"
 RSpec::Core::RakeTask.new(:spec)
 
 # Load the gemspec
-spec = Gem::Specification.load("parser-core-ruby.gemspec")
+spec = Gem::Specification.load("parsekit.gemspec")
 
 # Extension compilation task
-Rake::ExtensionTask.new("parser_core", spec) do |ext|
-  ext.lib_dir = "lib/parser_core"
+Rake::ExtensionTask.new("parsekit", spec) do |ext|
+  ext.lib_dir = "lib/parsekit"
   ext.source_pattern = "*.{c,cc,cpp,rs}"
   ext.cross_compile = true
   ext.cross_platform = %w[x86_64-linux arm64-darwin x86_64-darwin aarch64-linux]
@@ -24,12 +24,12 @@ task default: [:compile, :spec]
 # Clean task
 desc "Remove compiled artifacts"
 task :clean do
-  FileUtils.rm_rf("lib/parser_core/*.bundle")
-  FileUtils.rm_rf("lib/parser_core/*.so")
-  FileUtils.rm_rf("lib/parser_core/*.dll")
+  FileUtils.rm_rf("lib/parsekit/*.bundle")
+  FileUtils.rm_rf("lib/parsekit/*.so")
+  FileUtils.rm_rf("lib/parsekit/*.dll")
   FileUtils.rm_rf("tmp")
   FileUtils.rm_rf("pkg")
-  Dir.chdir("ext/parser_core") do
+  Dir.chdir("ext/parsekit") do
     sh "cargo clean" if File.exist?("Cargo.toml")
   end
 end
@@ -46,42 +46,42 @@ end
 namespace :rust do
   desc "Run cargo fmt"
   task :fmt do
-    Dir.chdir("ext/parser_core") do
+    Dir.chdir("ext/parsekit") do
       sh "cargo fmt"
     end
   end
   
   desc "Run cargo fmt check"
   task :fmt_check do
-    Dir.chdir("ext/parser_core") do
+    Dir.chdir("ext/parsekit") do
       sh "cargo fmt -- --check"
     end
   end
   
   desc "Run cargo test"
   task :test do
-    Dir.chdir("ext/parser_core") do
+    Dir.chdir("ext/parsekit") do
       sh "cargo test"
     end
   end
   
   desc "Run cargo clippy"
   task :clippy do
-    Dir.chdir("ext/parser_core") do
+    Dir.chdir("ext/parsekit") do
       sh "cargo clippy -- -D warnings"
     end
   end
   
   desc "Run cargo check"
   task :check do
-    Dir.chdir("ext/parser_core") do
+    Dir.chdir("ext/parsekit") do
       sh "cargo check"
     end
   end
   
   desc "Update Rust dependencies"
   task :update do
-    Dir.chdir("ext/parser_core") do
+    Dir.chdir("ext/parsekit") do
       sh "cargo update"
     end
   end
@@ -104,7 +104,7 @@ namespace :dev do
   task :console do
     require "irb"
     require "irb/completion"
-    require "parser_core"
+    require "parsekit"
     ARGV.clear
     IRB.start
   end

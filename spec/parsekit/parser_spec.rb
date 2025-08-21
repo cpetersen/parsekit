@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe ParserCore::Parser do
+RSpec.describe ParseKit::Parser do
   describe "#initialize" do
     it "creates a parser with default options" do
       parser = described_class.new

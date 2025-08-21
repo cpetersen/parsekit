@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-RSpec.describe ParserCore do
+RSpec.describe ParseKit do
   it "has a version number" do
-    expect(ParserCore::VERSION).not_to be_nil
-    expect(ParserCore::VERSION).to match(/\d+\.\d+\.\d+/)
+    expect(ParseKit::VERSION).not_to be_nil
+    expect(ParseKit::VERSION).to match(/\d+\.\d+\.\d+/)
   end
 
   describe ".parse" do
@@ -113,9 +113,9 @@ RSpec.describe ParserCore do
     it "defines custom error classes" do
       # Error classes are defined in the native extension
       # They don't inherit from StandardError in the current implementation
-      expect(ParserCore::Error).to be_a(Class)
-      expect(ParserCore::ParseError).to be_a(Class)
-      expect(ParserCore::ConfigError).to be_a(Class)
+      expect(ParseKit::Error).to be_a(Class)
+      expect(ParseKit::ParseError).to be_a(Class)
+      expect(ParseKit::ConfigError).to be_a(Class)
     end
   end
 end

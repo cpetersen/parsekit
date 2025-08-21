@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe "OCR with Tesseract" do
-  let(:parser) { ParserCore::Parser.new }
+  let(:parser) { ParseKit::Parser.new }
   
   describe "#ocr_image" do
     context "with valid image data" do
@@ -262,7 +262,7 @@ RSpec.describe "OCR with Tesseract" do
   
   describe "OCR support verification" do
     it "includes image formats in supported formats" do
-      formats = ParserCore::Parser.supported_formats
+      formats = ParseKit::Parser.supported_formats
       expect(formats).to include("png")
       expect(formats).to include("jpg")
       expect(formats).to include("jpeg")

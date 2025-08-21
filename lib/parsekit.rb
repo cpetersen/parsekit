@@ -1,19 +1,19 @@
 # frozen_string_literal: true
 
-require_relative "parser_core/version"
+require_relative "parsekit/version"
 
 # Load the native extension
 begin
-  require_relative "parser_core/parser_core"
+  require_relative "parsekit/parsekit"
 rescue LoadError
-  require "parser_core/parser_core"
+  require "parsekit/parsekit"
 end
 
-require_relative "parser_core/error"
-require_relative "parser_core/parser"
+require_relative "parsekit/error"
+require_relative "parsekit/parser"
 
-# ParserCore is a Ruby binding for the parser-core Rust crate
-module ParserCore
+# ParseKit is a Ruby document parsing toolkit with PDF and OCR support
+module ParseKit
   class << self
     # The parse_file and parse_bytes methods are defined in the native extension
     # We just need to document them here or add wrapper logic if needed
