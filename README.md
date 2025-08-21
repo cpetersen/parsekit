@@ -1,7 +1,7 @@
 # ParseKit
 
-[![CI](https://github.com/cpetersen/parser-core-ruby/actions/workflows/ci.yml/badge.svg)](https://github.com/cpetersen/parser-core-ruby/actions/workflows/ci.yml)
-[![Gem Version](https://badge.fury.io/rb/parser-core-ruby.svg)](https://badge.fury.io/rb/parser-core-ruby)
+[![CI](https://github.com/cpetersen/parsekit/actions/workflows/ci.yml/badge.svg)](https://github.com/cpetersen/parsekit/actions/workflows/ci.yml)
+[![Gem Version](https://badge.fury.io/rb/parsekit.svg)](https://badge.fury.io/rb/parsekit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Native Ruby bindings for the [parser-core](https://crates.io/crates/parser-core) Rust crate, providing high-performance document parsing and text extraction capabilities through Magnus. This gem wraps parser-core to extract text from PDFs, Office documents (DOCX, XLSX, PPTX), images (with OCR), and more. Part of the ruby-nlp ecosystem.
@@ -30,7 +30,7 @@ And then execute:
 Or install it yourself as:
 
 ```bash
-gem install parser-core-ruby
+gem install parsekit
 ```
 
 ### Requirements
@@ -54,24 +54,24 @@ For detailed installation instructions and troubleshooting, see [DEPENDENCIES.md
 require 'parsekit'
 
 # Parse a PDF file
-text = ParserCore.parse_file("document.pdf")
+text = ParseKit.parse_file("document.pdf")
 puts text  # Extracted text from the PDF
 
 # Parse an Office document
-text = ParserCore.parse_file("presentation.pptx")
+text = ParseKit.parse_file("presentation.pptx")
 puts text  # Extracted text from all slides
 
 # Parse an Excel file
-text = ParserCore.parse_file("spreadsheet.xlsx")
+text = ParseKit.parse_file("spreadsheet.xlsx")
 puts text  # Extracted text from all sheets
 
 # Parse binary data directly
 file_data = File.binread("document.pdf")
-text = ParserCore.parse_bytes(file_data)
+text = ParseKit.parse_bytes(file_data)
 puts text
 
 # Parse with a Parser instance
-parser = ParserCore::Parser.new
+parser = ParseKit::Parser.new
 text = parser.parse_file("report.docx")
 puts text
 ```

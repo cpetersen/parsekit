@@ -11,7 +11,7 @@
 
 ### Ruby Layer (Router/Orchestrator)
 ```ruby
-module ParserCore
+module ParseKit
   class Parser
     # High-level parse method that routes to specific parsers
     def parse_file(path)
@@ -135,7 +135,7 @@ impl Parser {
 ## Example Usage After Refactoring
 
 ```ruby
-parser = ParserCore::Parser.new
+parser = ParseKit::Parser.new
 
 # High-level API (unchanged)
 parser.parse_file("document.docx")  # Ruby detects format and routes

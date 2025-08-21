@@ -12,7 +12,7 @@ updates:
       - "ruby"
 
   - package-ecosystem: "cargo"
-    directory: "/ext/parser_core"
+    directory: "/ext/parsekit"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10

@@ -2,11 +2,11 @@
 # frozen_string_literal: true
 
 require 'bundler/setup'
-require 'parser_core'
+require 'parsekit'
 require 'benchmark'
 require 'json'
 
-puts "ParserCore Ruby - Advanced Examples"
+puts "ParseKit Ruby - Advanced Examples"
 puts "=" * 40
 
 # Example 1: Batch processing
@@ -19,7 +19,7 @@ inputs = [
   "Fifth document with numbers: 12345"
 ]
 
-parser = ParserCore::Parser.new(strict_mode: false, max_depth: 150)
+parser = ParseKit::Parser.new(strict_mode: false, max_depth: 150)
 results = inputs.map.with_index do |input, i|
   result = parser.parse(input)
   puts "   Document #{i + 1}: #{result[0..50]}..."
@@ -35,7 +35,7 @@ configs = [
 ]
 
 configs.each_with_index do |config, i|
-  parser = ParserCore::Parser.new(config)
+  parser = ParseKit::Parser.new(config)
   puts "   Config #{i + 1}: #{parser.config}"
   result = parser.parse("Test with config #{i + 1}")
   puts "   Result: #{result}"
@@ -47,7 +47,7 @@ test_input = "Lorem ipsum dolor sit amet, " * 100
 iterations = 1000
 
 time = Benchmark.realtime do
-  parser = ParserCore::Parser.new
+  parser = ParseKit::Parser.new
   iterations.times do
     parser.parse(test_input)
   end
@@ -64,7 +64,7 @@ FileUtils.mkdir_p("tmp")
 File.write(test_file, "This is a test document for file parsing.\nIt has multiple lines.\nAnd various content.")
 
 begin
-  result = ParserCore.parse_file(test_file)
+  result = ParseKit.parse_file(test_file)
   puts "   File parsed successfully"
   puts "   Result preview: #{result[0..100]}..."
 rescue IOError => e
@@ -77,7 +77,7 @@ end
 puts "\n5. Processing pipeline:"
 class DocumentProcessor
   def initialize
-    @parser = ParserCore::Parser.new(strict_mode: true)
+    @parser = ParseKit::Parser.new(strict_mode: true)
     @stats = { processed: 0, errors: 0, total_length: 0 }
   end
   
@@ -123,7 +123,7 @@ docs_per_thread = 25
 
 threads = thread_count.times.map do |i|
   Thread.new do
-    parser = ParserCore::Parser.new
+    parser = ParseKit::Parser.new
     docs_per_thread.times do |j|
       parser.parse("Thread #{i}, Document #{j}")
     end
@@ -142,7 +142,7 @@ require 'objspace'
 GC.start
 before_memory = ObjectSpace.memsize_of_all
 
-parser = ParserCore::Parser.new
+parser = ParseKit::Parser.new
 large_input = "x" * 10_000
 100.times { parser.parse(large_input) }
 
@@ -162,7 +162,7 @@ json_data = { text: "Parse this text", options: { mode: "strict" } }.to_json
 puts "   JSON input: #{json_data}"
 
 data = JSON.parse(json_data)
-parser = ParserCore::Parser.new(strict_mode: data["options"]["mode"] == "strict")
+parser = ParseKit::Parser.new(strict_mode: data["options"]["mode"] == "strict")
 result = parser.parse(data["text"])
 puts "   Parsed result: #{result}"
 
@@ -171,7 +171,7 @@ output = {
   input: data,
   result: result,
   metadata: {
-    parser_version: ParserCore::VERSION,
+    parser_version: ParseKit::VERSION,
     timestamp: Time.now.iso8601
   }
 }

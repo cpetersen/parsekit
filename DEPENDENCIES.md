@@ -1,6 +1,6 @@
 # System Dependencies
 
-The parser-core-ruby gem wraps the [parser-core](https://crates.io/crates/parser-core) Rust crate, which requires several system libraries for document parsing and OCR functionality.
+The parsekit gem wraps the [parser-core](https://crates.io/crates/parser-core) Rust crate, which requires several system libraries for document parsing and OCR functionality.
 
 ## Required Libraries
 

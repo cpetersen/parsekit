@@ -53,7 +53,7 @@ jobs:
           ~/.cargo/registry/index/
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
-          ext/parser_core/target/
+          ext/parsekit/target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
         restore-keys: |
           ${{ runner.os }}-cargo-
@@ -99,12 +99,12 @@ jobs:
     
     - name: Check Rust formatting
       run: |
-        cd ext/parser_core
+        cd ext/parsekit
         cargo fmt -- --check
     
     - name: Run Clippy
       run: |
-        cd ext/parser_core
+        cd ext/parsekit
         cargo clippy -- -D warnings
       continue-on-error: true # Allow this to fail initially
     
@@ -131,13 +131,13 @@ jobs:
     
     - name: Build gem
       run: |
-        gem build parser-core-ruby.gemspec
+        gem build parsekit.gemspec
         
     - name: Upload gem artifact
       uses: actions/upload-artifact@v4
       with:
         name: gem
-        path: parser-core-ruby-*.gem
+        path: parsekit-*.gem
         retention-days: 7
 
   security:
@@ -162,6 +162,6 @@ jobs:
     - name: Run cargo audit
       run: |
         cargo install cargo-audit
-        cd ext/parser_core
+        cd ext/parsekit
         cargo audit
       continue-on-error: true

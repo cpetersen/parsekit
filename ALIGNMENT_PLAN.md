@@ -8,7 +8,7 @@ Create an API that looks similar to the main branch but doesn't need 100% compat
 ### Main Branch (parser-core dependent)
 - **Dependencies**: Uses the `parser-core` Rust crate directly
 - **External Requirements**: Requires system libraries (Tesseract for OCR, etc.)
-- **Core Function**: `parser_core::parse(&bytes)` - single unified parsing function
+- **Core Function**: `parsekit::parse(&bytes)` - single unified parsing function
 
 ### no-parser-core Branch (self-contained)
 - **Dependencies**: Pure Rust crates without system dependencies
@@ -54,9 +54,9 @@ Stick with `pdf-extract` using `default-features = false` for pure Rust implemen
 ### 3. Module-level Methods
 | Main Branch | no-parser-core Branch | Action Required |
 |------------|---------------------|-----------------|
-| `ParserCore.parse_file` | `ParserCore.parse_file` | Already aligned ✓ |
-| `ParserCore.parse_bytes` | `ParserCore.parse_data` | Rename to `parse_bytes` |
-| `ParserCore.parse` | `ParserCore.parse` | Already aligned ✓ |
+| `ParseKit.parse_file` | `ParseKit.parse_file` | Already aligned ✓ |
+| `ParseKit.parse_bytes` | `ParseKit.parse_data` | Rename to `parse_bytes` |
+| `ParseKit.parse` | `ParseKit.parse` | Already aligned ✓ |
 
 ## Implementation Plan (Simplified)
 
@@ -79,7 +79,7 @@ module.define_singleton_method("parse_bytes", function!(parse_bytes_direct, 1))?
 
 ### Phase 2: Ruby Interface Updates
 
-#### 2.1 Update lib/parser_core.rb
+#### 2.1 Update lib/parsekit.rb
 ```ruby
 # Add parse_bytes convenience method
 def parse_bytes(data, options = {})
@@ -89,7 +89,7 @@ def parse_bytes(data, options = {})
 end
 ```
 
-#### 2.2 Update lib/parser_core/parser.rb
+#### 2.2 Update lib/parsekit/parser.rb
 - Update documentation to reflect `parse_bytes` instead of `parse_data`
 - Keep the enhanced features (supports_file?, supported_formats)
 
@@ -112,12 +112,12 @@ Consider migrating to one of these based on needs:
 # spec/compatibility_spec.rb
 RSpec.describe "API compatibility" do
   it "supports parse_bytes method" do
-    parser = ParserCore::Parser.new
+    parser = ParseKit::Parser.new
     expect(parser).to respond_to(:parse_bytes)
   end
   
   it "maintains parse_file interface" do
-    parser = ParserCore::Parser.new
+    parser = ParseKit::Parser.new
     expect(parser).to respond_to(:parse_file)
   end
 end

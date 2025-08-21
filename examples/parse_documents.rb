@@ -1,17 +1,17 @@
 #!/usr/bin/env ruby
-# Example script for parsing various document types with ParserCore
+# Example script for parsing various document types with ParseKit
 # 
 # Usage: ruby parse_documents.rb [file_path]
 #
 # If no file path is provided, the script will demonstrate parsing
 # with sample content for various formats.
 
-require_relative '../lib/parser_core'
+require_relative '../lib/parsekit'
 require 'tempfile'
 require 'json'
 
 def parse_file_example(file_path)
-  parser = ParserCore::Parser.new
+  parser = ParseKit::Parser.new
   
   puts "Parsing file: #{file_path}"
   puts "-" * 50
@@ -57,9 +57,9 @@ def parse_file_example(file_path)
 end
 
 def demonstrate_all_formats
-  parser = ParserCore::Parser.new
+  parser = ParseKit::Parser.new
   
-  puts "ParserCore Document Parsing Examples"
+  puts "ParseKit Document Parsing Examples"
   puts "=" * 50
   
   # 1. Text file
@@ -90,7 +90,7 @@ def demonstrate_all_formats
   puts "-" * 30
   Tempfile.create(['example', '.json']) do |file|
     json_data = {
-      "name" => "ParserCore Example",
+      "name" => "ParseKit Example",
       "version" => "1.0.0",
       "features" => ["parsing", "format detection", "pure rust"],
       "metadata" => {
@@ -147,7 +147,7 @@ def demonstrate_all_formats
         <title>Sample Page</title>
       </head>
       <body>
-        <h1>Welcome to ParserCore</h1>
+        <h1>Welcome to ParseKit</h1>
         <p>This is a sample HTML document.</p>
         <ul>
           <li>Feature 1</li>
@@ -191,7 +191,7 @@ def demonstrate_all_formats
   puts "-" * 30
   Tempfile.create(['example', '.md']) do |file|
     md_content = <<~MD
-      # ParserCore Example
+      # ParseKit Example
       
       This is a **markdown** document with *various* formatting.
       

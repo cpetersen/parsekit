@@ -1,6 +1,6 @@
-# Contributing to ParserCore Ruby
+# Contributing to ParseKit Ruby
 
-First off, thank you for considering contributing to ParserCore Ruby! It's people like you that make ParserCore Ruby such a great tool.
+First off, thank you for considering contributing to ParseKit Ruby! It's people like you that make ParseKit Ruby such a great tool.
 
 ## Code of Conduct
 
@@ -21,7 +21,7 @@ Before creating bug reports, please check existing issues as you might find out 
   * Ruby version (run `ruby -v`)
   * Rust version (run `rustc --version`)
   * Operating system and version
-  * ParserCore Ruby version
+  * ParseKit Ruby version
 
 ### Suggesting Enhancements
 
@@ -31,7 +31,7 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 * **Provide a step-by-step description of the suggested enhancement** in as many details as possible
 * **Provide specific examples to demonstrate the steps** or provide code snippets
 * **Describe the current behavior** and **explain which behavior you expected to see instead** and why
-* **Explain why this enhancement would be useful** to most ParserCore Ruby users
+* **Explain why this enhancement would be useful** to most ParseKit Ruby users
 
 ### Pull Requests
 
@@ -45,8 +45,8 @@ Please follow these steps to have your contribution considered by the maintainer
 
 1. **Fork and clone the repository**
    ```bash
-   git clone https://github.com/your-username/parser-core-ruby.git
-   cd parser-core-ruby
+   git clone https://github.com/your-username/parsekit.git
+   cd parsekit
    ```
 
 2. **Install Ruby dependencies**
@@ -105,12 +105,12 @@ Please follow these steps to have your contribution considered by the maintainer
 * Follow the [Rust Style Guide](https://doc.rust-lang.org/1.0.0/style/)
 * Use rustfmt to format your code:
   ```bash
-  cd ext/parser_core
+  cd ext/parsekit
   cargo fmt
   ```
 * Use clippy to lint your code:
   ```bash
-  cd ext/parser_core
+  cd ext/parsekit
   cargo clippy
   ```
 * Write tests for new Rust functionality
@@ -134,7 +134,7 @@ bundle exec rake spec
 
 Run specific test file:
 ```bash
-bundle exec rspec spec/parser_core_spec.rb
+bundle exec rspec spec/parsekit_spec.rb
 ```
 
 Run with coverage:
@@ -151,7 +151,7 @@ bundle exec rake rust:test
 
 Or directly:
 ```bash
-cd ext/parser_core
+cd ext/parsekit
 cargo test
 ```
 
@@ -178,7 +178,7 @@ bundle exec ruby benchmark/comparison.rb
 
 Releases are managed by maintainers. The process is:
 
-1. Update version in `lib/parser_core/version.rb`
+1. Update version in `lib/parsekit/version.rb`
 2. Update CHANGELOG.md
 3. Commit changes: `git commit -am "Release version X.Y.Z"`
 4. Create tag: `git tag -a vX.Y.Z -m "Release version X.Y.Z"`
@@ -194,4 +194,4 @@ Releases are managed by maintainers. The process is:
 
 ## Questions?
 
-Feel free to open an issue with the `question` label or start a discussion in the [GitHub Discussions](https://github.com/cpetersen/parser-core-ruby/discussions) area.
+Feel free to open an issue with the `question` label or start a discussion in the [GitHub Discussions](https://github.com/cpetersen/parsekit/discussions) area.

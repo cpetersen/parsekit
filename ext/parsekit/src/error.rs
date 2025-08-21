@@ -1,6 +1,6 @@
 use magnus::{exception, Error, RModule, Ruby, Module};
 
-/// Custom error types for ParserCore
+/// Custom error types for ParseKit
 #[derive(Debug)]
 #[allow(dead_code)]
 pub enum ParserError {
