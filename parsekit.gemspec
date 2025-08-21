@@ -5,8 +5,8 @@ require_relative "lib/parsekit/version"
 Gem::Specification.new do |spec|
   spec.name = "parsekit"
   spec.version = ParseKit::VERSION
-  spec.authors = ["Your Name"]
-  spec.email = ["your.email@example.com"]
+  spec.authors = ["Chris Petersen"]
+  spec.email = ["chris@petersen.io"]
 
   spec.summary = "Ruby document parsing toolkit with PDF and OCR support"
   spec.description = "Native Ruby gem for parsing documents (PDF, DOCX, XLSX, images with OCR) with zero runtime dependencies. Statically links MuPDF for PDF extraction and Tesseract for OCR."
