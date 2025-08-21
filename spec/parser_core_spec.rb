@@ -92,7 +92,7 @@ RSpec.describe ParserCore do
     end
 
     it "returns false for unsupported file types" do
-      expect(described_class.supports_file?("image.jpg")).to be false
+      expect(described_class.supports_file?("audio.mp3")).to be false
       expect(described_class.supports_file?("video.mp4")).to be false
     end
 

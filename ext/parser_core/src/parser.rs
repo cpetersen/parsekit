@@ -77,6 +77,7 @@ impl Parser {
             "xlsx" | "xls" => self.parse_xlsx(data),
             "json" => self.parse_json(data),
             "xml" | "html" => self.parse_xml(data),
+            "png" | "jpg" | "jpeg" | "tiff" | "bmp" => self.ocr_image(data),
             "txt" | "text" => self.parse_text(data),
             _ => self.parse_text(data), // Default to text parsing
         }
@@ -103,12 +104,59 @@ impl Parser {
             "xlsx".to_string() // Office Open XML format (could also be DOCX)
         } else if data.starts_with(&[0xD0, 0xCF, 0x11, 0xE0]) {
             "xls".to_string() // Old Excel format
+        } else if data.starts_with(&[0x89, 0x50, 0x4E, 0x47]) {
+            "png".to_string() // PNG signature
+        } else if data.starts_with(&[0xFF, 0xD8, 0xFF]) {
+            "jpg".to_string() // JPEG signature
+        } else if data.starts_with(b"BM") {
+            "bmp".to_string() // BMP signature
+        } else if data.starts_with(b"II\x2A\x00") || data.starts_with(b"MM\x00\x2A") {
+            "tiff".to_string() // TIFF signature (little-endian or big-endian)
         } else if data.starts_with(b"<?xml") || data.starts_with(b"<html") {
             "xml".to_string()
         } else if data.starts_with(b"{") || data.starts_with(b"[") {
             "json".to_string()
         } else {
             "txt".to_string()
+        }
+    }
+    
+    /// Perform OCR on image data using Tesseract
+    fn ocr_image(&self, data: Vec<u8>) -> Result<String, Error> {
+        use rusty_tesseract::{Image, Args};
+        
+        // Load image from memory
+        let img = match image::load_from_memory(&data) {
+            Ok(img) => img,
+            Err(e) => return Err(Error::new(
+                magnus::exception::runtime_error(),
+                format!("Failed to load image: {}", e),
+            ))
+        };
+        
+        // Create rusty_tesseract Image from DynamicImage
+        let tess_img = match Image::from_dynamic_image(&img) {
+            Ok(img) => img,
+            Err(e) => return Err(Error::new(
+                magnus::exception::runtime_error(),
+                format!("Failed to convert image for OCR: {}", e),
+            ))
+        };
+        
+        // Set up OCR arguments
+        let mut args = Args::default();
+        args.lang = "eng".to_string();
+        // Optional: Add more configuration
+        // args.config_variables.insert("tessedit_char_whitelist".to_string(), 
+        //     "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .,!?-".to_string());
+        
+        // Perform OCR
+        match rusty_tesseract::image_to_string(&tess_img, &args) {
+            Ok(text) => Ok(text.trim().to_string()),
+            Err(e) => Err(Error::new(
+                magnus::exception::runtime_error(),
+                format!("Failed to perform OCR: {}", e),
+            ))
         }
     }
     
@@ -353,7 +401,12 @@ impl Parser {
             "xlsx".to_string(),
             "xls".to_string(),
             "csv".to_string(),
-            "pdf".to_string(), // Limited support without system libs
+            "pdf".to_string(),  // Text extraction via MuPDF
+            "png".to_string(),  // OCR via Tesseract
+            "jpg".to_string(),  // OCR via Tesseract
+            "jpeg".to_string(), // OCR via Tesseract
+            "tiff".to_string(), // OCR via Tesseract
+            "bmp".to_string(),  // OCR via Tesseract
         ]
     }
     
@@ -406,6 +459,7 @@ pub fn init(_ruby: &Ruby, module: RModule) -> Result<(), Error> {
     class.define_method("parse_json", method!(Parser::parse_json, 1))?;
     class.define_method("parse_xml", method!(Parser::parse_xml, 1))?;
     class.define_method("parse_text", method!(Parser::parse_text, 1))?;
+    class.define_method("ocr_image", method!(Parser::ocr_image, 1))?;
     
     // Class methods
     class.define_singleton_method("supported_formats", function!(Parser::supported_formats, 0))?;

@@ -254,7 +254,7 @@ RSpec.describe ParserCore::Parser do
     end
 
     it "returns false for unsupported file types" do
-      expect(parser.supports_file?("image.png")).to be false
+      expect(parser.supports_file?("video.mp4")).to be false
     end
 
     it "handles uppercase extensions" do
