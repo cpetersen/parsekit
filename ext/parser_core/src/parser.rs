@@ -112,11 +112,53 @@ impl Parser {
         }
     }
     
-    /// Parse PDF files - exposed to Ruby
+    /// Parse PDF files using MuPDF (statically linked) - exposed to Ruby
     fn parse_pdf(&self, data: Vec<u8>) -> Result<String, Error> {
-        // Note: pdf-extract has issues with system dependencies
-        // For now, return a placeholder
-        Ok("PDF parsing requires additional system libraries (install with: brew install poppler)".to_string())
+        use mupdf::Document;
+        
+        // Try to load the PDF from memory
+        // The magic parameter helps MuPDF identify the file type
+        match Document::from_bytes(&data, "pdf") {
+            Ok(doc) => {
+                let mut all_text = String::new();
+                
+                // Get page count - this returns a Result
+                let page_count = match doc.page_count() {
+                    Ok(count) => count,
+                    Err(e) => return Err(Error::new(
+                        magnus::exception::runtime_error(),
+                        format!("Failed to get page count: {}", e),
+                    ))
+                };
+                
+                // Iterate through pages
+                for page_num in 0..page_count {
+                    match doc.load_page(page_num) {
+                        Ok(page) => {
+                            // Extract text from the page
+                            match page.to_text() {
+                                Ok(text) => {
+                                    all_text.push_str(&text);
+                                    all_text.push('\n');
+                                }
+                                Err(_) => continue,
+                            }
+                        }
+                        Err(_) => continue,
+                    }
+                }
+                
+                if all_text.is_empty() {
+                    Ok("PDF contains no extractable text (might be scanned/image-based)".to_string())
+                } else {
+                    Ok(all_text.trim().to_string())
+                }
+            }
+            Err(e) => Err(Error::new(
+                magnus::exception::runtime_error(),
+                format!("Failed to parse PDF: {}", e),
+            ))
+        }
     }
     
     /// Parse DOCX (Word) files - exposed to Ruby
