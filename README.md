@@ -1,4 +1,4 @@
-# ParserCore Ruby
+# ParseKit
 
 [![CI](https://github.com/cpetersen/parser-core-ruby/actions/workflows/ci.yml/badge.svg)](https://github.com/cpetersen/parser-core-ruby/actions/workflows/ci.yml)
 [![Gem Version](https://badge.fury.io/rb/parser-core-ruby.svg)](https://badge.fury.io/rb/parser-core-ruby)
@@ -20,14 +20,12 @@ Native Ruby bindings for the [parser-core](https://crates.io/crates/parser-core)
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'parser-core-ruby'
+gem 'parsekit'
 ```
 
 And then execute:
 
-```bash
-bundle install
-```
+    $ bundle install
 
 Or install it yourself as:
 
@@ -45,7 +43,7 @@ gem install parser-core-ruby
   - **Ubuntu/Debian**: `sudo apt-get install libleptonica-dev libtesseract-dev libpoppler-cpp-dev`
   - **Fedora/RHEL**: `sudo dnf install leptonica-devel tesseract-devel poppler-cpp-devel`
   - **Windows**: See [DEPENDENCIES.md](DEPENDENCIES.md) for MSYS2 instructions
-  
+
 For detailed installation instructions and troubleshooting, see [DEPENDENCIES.md](DEPENDENCIES.md).
 
 ## Usage
@@ -53,7 +51,7 @@ For detailed installation instructions and troubleshooting, see [DEPENDENCIES.md
 ### Basic Usage
 
 ```ruby
-require 'parser_core'
+require 'parsekit'
 
 # Parse a PDF file
 text = ParserCore.parse_file("document.pdf")
@@ -78,219 +76,108 @@ text = parser.parse_file("report.docx")
 puts text
 ```
 
-### Using the Parser Class
+### Module-Level Convenience Methods
 
 ```ruby
-# Create a parser instance with configuration
-parser = ParserCore::Parser.new(
+# Parse files directly
+content = ParseKit.parse_file('document.pdf')
+
+# Parse bytes
+data = File.read('document.pdf', mode: 'rb')
+content = ParseKit.parse_bytes(data.bytes)
+
+# Check supported formats
+formats = ParseKit.supported_formats
+# => ["txt", "json", "xml", "html", "docx", "xlsx", "xls", "csv", "pdf", "png", "jpg", "jpeg", "tiff", "bmp"]
+
+# Check if a file is supported
+ParseKit.supports_file?('document.pdf')  # => true
+```
+
+### Configuration Options
+
+```ruby
+# Create parser with options
+parser = ParseKit::Parser.new(
   strict_mode: true,
-  max_depth: 200,
-  encoding: "UTF-8"
+  max_size: 50 * 1024 * 1024,  # 50MB limit
+  encoding: 'UTF-8'
 )
 
-# Parse input
-result = parser.parse("Some input text")
-puts result
-
-# Check configuration
-config = parser.config
-puts config[:strict_mode]  # => true
-puts config[:max_depth]    # => 200
-puts config[:encoding]     # => "UTF-8"
-
-# Check if in strict mode
-puts parser.strict_mode?  # => true
-
-# Parse a file
-result = parser.parse_file("document.txt")
+# Or use the strict convenience method
+parser = ParseKit::Parser.strict
 ```
 
-### Advanced Usage
+### Format-Specific Parsing
 
 ```ruby
-# Create a strict parser using convenience method
-strict_parser = ParserCore::Parser.strict(max_depth: 75)
+parser = ParseKit::Parser.new
 
-# Parse with a block for processing
-parser = ParserCore::Parser.new
-parser.parse_with_block("input text") do |result|
-  # Process the parsed result
-  puts "Processed: #{result}"
-  # Transform or analyze the result
-  result.upcase
-end
+# Direct access to format-specific parsers
+pdf_data = File.read('document.pdf', mode: 'rb').bytes
+pdf_text = parser.parse_pdf(pdf_data)
 
-# Validate input before parsing
-parser = ParserCore::Parser.new
-if parser.valid_input?(input)
-  result = parser.parse(input)
-else
-  puts "Invalid input"
-end
+image_data = File.read('image.png', mode: 'rb').bytes
+ocr_text = parser.ocr_image(image_data)
+
+excel_data = File.read('data.xlsx', mode: 'rb').bytes
+excel_text = parser.parse_xlsx(excel_data)
 ```
 
-### Error Handling
+## Supported Formats
 
-```ruby
-begin
-  result = ParserCore.parse("")
-rescue ArgumentError => e
-  puts "Parsing error: #{e.message}"
-end
+| Format | Extensions | Method | Notes |
+|--------|------------|--------|-------|
+| PDF | .pdf | `parse_pdf` | Text extraction via MuPDF |
+| Word | .docx | `parse_docx` | Office Open XML format |
+| Excel | .xlsx, .xls | `parse_xlsx` | Both modern and legacy formats |
+| Images | .png, .jpg, .jpeg, .tiff, .bmp | `ocr_image` | OCR via embedded Tesseract |
+| JSON | .json | `parse_json` | Pretty-printed output |
+| XML/HTML | .xml, .html | `parse_xml` | Extracts text content |
+| Text | .txt, .csv, .md | `parse_text` | With encoding detection |
 
-begin
-  result = ParserCore.parse_file("nonexistent.txt")
-rescue IOError => e
-  puts "File error: #{e.message}"
-end
-```
+## Performance
 
-## Configuration Options
+ParseKit is built with performance in mind:
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `strict_mode` | Boolean | `false` | Enable strict parsing mode |
-| `max_depth` | Integer | `100` | Maximum parsing depth |
-| `encoding` | String | `"UTF-8"` | Input encoding |
+- Native Rust implementation for speed
+- Statically linked C libraries (MuPDF, Tesseract) compiled with optimizations
+- Efficient memory usage with streaming where possible
+- Configurable size limits to prevent memory issues
 
 ## Development
 
-### Setup
+After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests.
 
-After checking out the repo, run:
+To compile the Rust extension:
 
 ```bash
-bundle install
-bundle exec rake compile
+rake compile
 ```
 
-### Running Tests
-
-Run the test suite:
+To run tests with coverage:
 
 ```bash
-bundle exec rake spec
-```
-
-Run with coverage:
-
-```bash
-bundle exec rake dev:coverage
-```
-
-### Running Rust Tests
-
-```bash
-bundle exec rake rust:test
-```
-
-### Linting
-
-Check Ruby code:
-
-```bash
-bundle exec rubocop
-```
-
-Check Rust code:
-
-```bash
-bundle exec rake rust:fmt_check
-bundle exec rake rust:clippy
-```
-
-### Building
-
-Build the gem:
-
-```bash
-gem build parser-core-ruby.gemspec
-```
-
-Build for release:
-
-```bash
-bundle exec rake compile:release
-```
-
-### Console
-
-For an interactive prompt with the gem loaded:
-
-```bash
-bundle exec rake dev:console
+rake dev:coverage
 ```
 
 ## Architecture
 
-This gem uses Magnus to create Ruby bindings for Rust code:
+ParseKit uses a hybrid Ruby/Rust architecture:
 
-```
-┌─────────────────┐
-│   Ruby Layer    │  lib/parser_core.rb
-├─────────────────┤
-│  Magnus Bridge  │  ext/parser_core/src/lib.rs
-├─────────────────┤
-│   Rust Core     │  ext/parser_core/src/parser.rs
-└─────────────────┘
-```
-
-## Performance
-
-The parser-core-ruby gem provides near-native performance through Rust while maintaining Ruby's ease of use. Benchmarks show significant performance improvements over pure Ruby implementations:
-
-- **Parsing Speed**: 10-50x faster than pure Ruby parsers
-- **Memory Usage**: 2-5x more memory efficient
-- **Thread Safety**: Safe concurrent parsing through Rust's ownership model
-
-## Ecosystem
-
-`parser-core-ruby` is part of the ruby-nlp ecosystem:
-
-- [red-candle](https://github.com/assaydepot/red-candle) - LLM and NLP models for Ruby
-- [lancelot](https://github.com/cpetersen/lancelot) - Lance columnar store bindings
-- [annembed-ruby](https://github.com/cpetersen/annembed-ruby) - Embedding functionality
+- **Ruby Layer**: Provides convenient API and format detection
+- **Rust Layer**: Implements high-performance parsing using:
+  - MuPDF for PDF text extraction (statically linked)
+  - rusty-tesseract for OCR (with embedded Tesseract)
+  - Pure Rust libraries for DOCX/XLSX parsing
+  - Magnus for Ruby-Rust FFI bindings
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/cpetersen/parser-core-ruby. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](CODE_OF_CONDUCT.md).
-
-### Development Process
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests (`bundle exec rake spec`)
-5. Run linting (`bundle exec rake rust:fmt && bundle exec rubocop`)
-6. Commit your changes (`git commit -m 'Add some amazing feature'`)
-7. Push to the branch (`git push origin feature/amazing-feature`)
-8. Open a Pull Request
-
-## Roadmap
-
-- [ ] Integration with actual parser-core crate
-- [ ] Streaming parser support
-- [ ] Async parsing capabilities
-- [ ] Additional parser configurations
-- [ ] Performance benchmarks
-- [ ] More comprehensive error handling
-- [ ] Parser plugins/extensions
+Bug reports and pull requests are welcome on GitHub at https://github.com/cpetersen/parsekit.
 
 ## License
 
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
 
-## Code of Conduct
-
-Everyone interacting in the ParserCore Ruby project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](CODE_OF_CONDUCT.md).
-
-## Acknowledgments
-
-- The [Magnus](https://github.com/matsadler/magnus) project for excellent Ruby-Rust bindings
-- The Rust community for the amazing ecosystem
-- Contributors to the ruby-nlp ecosystem
-
-## Support
-
-- **Documentation**: [https://rubydoc.info/gems/parser-core-ruby](https://rubydoc.info/gems/parser-core-ruby)
-- **Issues**: [GitHub Issues](https://github.com/cpetersen/parser-core-ruby/issues)
+Note: This gem includes statically linked versions of MuPDF (AGPL/Commercial) and Tesseract (Apache 2.0). Please review their respective licenses for compliance with your use case.

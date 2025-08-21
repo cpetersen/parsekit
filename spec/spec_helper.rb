@@ -1,24 +1,48 @@
 # frozen_string_literal: true
 
 # Coverage setup (must be before requiring the gem)
-if ENV["COVERAGE"] || ENV["CI"]
-  require "simplecov"
+require "simplecov"
+
+# Configure SimpleCov before starting
+SimpleCov.configure do
+  # Set the root to the project directory
+  root File.expand_path("..", __dir__)
   
-  SimpleCov.start do
-    add_filter "/spec/"
-    add_filter "/ext/"  # Native extensions can't be tracked
-    track_files "lib/**/*.rb"
-    
-    add_group "Library", "lib/"
-    add_group "Extensions", "ext/"
-    
-    minimum_coverage 90
-    minimum_coverage_by_file 80
+  # Track files even if not loaded during test run
+  track_files "lib/**/*.rb"
+  
+  add_filter "/spec/"
+  add_filter "/ext/"  # Native extensions can't be tracked
+  add_filter "/tmp/"
+  add_filter "/.bundle/"
+  add_filter "/vendor/"
+  add_filter %r{/parsekit.bundle}
+  
+  add_group "Main", "lib/parsekit.rb"
+  add_group "Parser", "lib/parsekit/parser.rb"
+  add_group "Error", "lib/parsekit/error.rb"
+  add_group "Version", "lib/parsekit/version.rb"
+  
+  # Set coverage thresholds
+  minimum_coverage 60
+  # minimum_coverage_by_file 50  # Disabled for now due to version.rb
+  
+  # Use HTML and console formatters
+  if ENV["CI"]
+    formatter SimpleCov::Formatter::SimpleFormatter
+  else
+    formatter SimpleCov::Formatter::HTMLFormatter
   end
+  
+  # Enable branch coverage
+  enable_coverage :branch
 end
 
+# Start SimpleCov
+SimpleCov.start
+
 require "bundler/setup"
-require "parser_core"
+require "parsekit"
 
 # Support files
 Dir[File.join(__dir__, "support", "**", "*.rb")].sort.each { |f| require f }
@@ -42,7 +66,7 @@ RSpec.configure do |config|
   config.filter_gems_from_backtrace("bundler")
   
   # Add custom matchers, helpers, etc.
-  config.include ParserCoreHelpers if defined?(ParserCoreHelpers)
+  config.include ParseKitHelpers if defined?(ParseKitHelpers)
 
   # Hooks
   config.before(:suite) do

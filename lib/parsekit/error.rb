@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-module ParserCore
+module ParseKit
   # Error classes are defined in the native extension
   # This file is kept for documentation purposes
   
-  # Base error class for ParserCore (defined in native extension)
+  # Base error class for ParseKit (defined in native extension)
   # class Error < StandardError; end
   
   # Raised when parsing fails (defined in native extension)

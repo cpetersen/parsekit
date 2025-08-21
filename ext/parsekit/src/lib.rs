@@ -3,10 +3,10 @@ use magnus::{function, prelude::*, Error, Ruby};
 mod parser;
 mod error;
 
-/// Initialize the ParserCore module and its submodules
+/// Initialize the ParseKit module and its submodules
 #[magnus::init]
 fn init(ruby: &Ruby) -> Result<(), Error> {
-    let module = ruby.define_module("ParserCore")?;
+    let module = ruby.define_module("ParseKit")?;
     
     // Initialize submodules
     parser::init(ruby, module)?;
@@ -18,7 +18,7 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
     Ok(())
 }
 
-/// Return the version of the parser-core-ruby gem
+/// Return the version of the parsekit gem
 fn version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
 }
