@@ -1,6 +1,5 @@
-# ParseKit
+<img src="/docs/assets/parsekit-wide.png" alt="parsekit" height="80px">
 
-[![CI](https://github.com/cpetersen/parsekit/actions/workflows/ci.yml/badge.svg)](https://github.com/cpetersen/parsekit/actions/workflows/ci.yml)
 [![Gem Version](https://badge.fury.io/rb/parsekit.svg)](https://badge.fury.io/rb/parsekit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
