@@ -3,11 +3,11 @@
 [![Gem Version](https://badge.fury.io/rb/parsekit.svg)](https://badge.fury.io/rb/parsekit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Native Ruby bindings for the [parser-core](https://crates.io/crates/parser-core) Rust crate, providing high-performance document parsing and text extraction capabilities through Magnus. This gem wraps parser-core to extract text from PDFs, Office documents (DOCX, XLSX, PPTX), images (with OCR), and more. Part of the ruby-nlp ecosystem.
+Native Ruby bindings for the [parser-core](https://crates.io/crates/parser-core) Rust crate, providing high-performance document parsing and text extraction capabilities through Magnus. This gem wraps parser-core to extract text from PDFs, Office documents (DOCX, XLSX), images (with OCR), and more. Part of the ruby-nlp ecosystem.
 
 ## Features
 
-- 📄 **Document Parsing**: Extract text from PDFs, Office documents (DOCX, XLSX, PPTX)
+- 📄 **Document Parsing**: Extract text from PDFs, Office documents (DOCX, XLSX)
 - 🖼️ **OCR Support**: Extract text from images using Tesseract OCR
 - 🚀 **High Performance**: Native Rust performance with Ruby convenience
 - 🔧 **Unified API**: Single interface for multiple document formats
@@ -55,10 +55,6 @@ require 'parsekit'
 # Parse a PDF file
 text = ParseKit.parse_file("document.pdf")
 puts text  # Extracted text from the PDF
-
-# Parse an Office document
-text = ParseKit.parse_file("presentation.pptx")
-puts text  # Extracted text from all slides
 
 # Parse an Excel file
 text = ParseKit.parse_file("spreadsheet.xlsx")
@@ -130,10 +126,20 @@ excel_text = parser.parse_xlsx(excel_data)
 | PDF | .pdf | `parse_pdf` | Text extraction via MuPDF |
 | Word | .docx | `parse_docx` | Office Open XML format |
 | Excel | .xlsx, .xls | `parse_xlsx` | Both modern and legacy formats |
+| PowerPoint | .pptx | - | **Not yet supported** - see [implementation plan](docs/PPTX_PLAN.md) |
 | Images | .png, .jpg, .jpeg, .tiff, .bmp | `ocr_image` | OCR via embedded Tesseract |
 | JSON | .json | `parse_json` | Pretty-printed output |
 | XML/HTML | .xml, .html | `parse_xml` | Extracts text content |
 | Text | .txt, .csv, .md | `parse_text` | With encoding detection |
+
+### Note on PowerPoint Support
+
+While PPTX files are listed in our features, they are not yet fully implemented. Currently, PPTX files will return binary data instead of extracted text. We have a detailed [implementation plan](docs/PPTX_PLAN.md) for adding proper PPTX support in a future release. This will involve:
+- Adding ZIP archive handling capabilities
+- Implementing XML extraction from PowerPoint slide files
+- Following the same Office Open XML approach used for DOCX files
+
+For now, if you need to extract text from PowerPoint files, we recommend converting them to PDF first.
 
 ## Performance
 
