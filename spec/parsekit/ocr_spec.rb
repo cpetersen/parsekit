@@ -5,10 +5,11 @@ RSpec.describe "OCR with Tesseract" do
   
   describe "#ocr_image" do
     context "with valid image data" do
-      let(:test_image_path) { "spec/fixtures/ocr_test.png" }
+      require 'tmpdir'
+let(:temp_dir) { Dir.mktmpdir }
+let(:test_image_path) { File.join(temp_dir, "ocr_test.png") }
       
       before do
-        FileUtils.mkdir_p("spec/fixtures")
         # Create a test image with Python PIL
         system(<<~PYTHON)
           python3 -c "
@@ -26,7 +27,7 @@ RSpec.describe "OCR with Tesseract" do
       end
       
       after do
-        FileUtils.rm_f(test_image_path) if File.exist?(test_image_path)
+        FileUtils.rm_rf(temp_dir) if Dir.exist?(temp_dir)
       end
       
       it "extracts text from PNG image" do
@@ -41,7 +42,6 @@ RSpec.describe "OCR with Tesseract" do
       it "handles JPEG images" do
         # Create a JPEG test image
         jpeg_path = "spec/fixtures/ocr_test.jpg"
-        FileUtils.mkdir_p("spec/fixtures")
         
         system(<<~PYTHON)
           python3 -c "
@@ -70,7 +70,6 @@ RSpec.describe "OCR with Tesseract" do
       it "handles BMP images" do
         # Create a BMP test image
         bmp_path = "spec/fixtures/ocr_test.bmp"
-        FileUtils.mkdir_p("spec/fixtures")
         
         system(<<~PYTHON)
           python3 -c "
@@ -113,7 +112,6 @@ RSpec.describe "OCR with Tesseract" do
     context "with complex text" do
       it "handles multi-line text" do
         multiline_path = "spec/fixtures/multiline_ocr.png"
-        FileUtils.mkdir_p("spec/fixtures")
         
         system(<<~PYTHON)
           python3 -c "
@@ -145,7 +143,6 @@ RSpec.describe "OCR with Tesseract" do
       
       it "handles numbers and special characters" do
         special_path = "spec/fixtures/special_ocr.png"
-        FileUtils.mkdir_p("spec/fixtures")
         
         system(<<~PYTHON)
           python3 -c "
@@ -176,7 +173,6 @@ RSpec.describe "OCR with Tesseract" do
   describe "#parse_file with images" do
     it "automatically detects and processes PNG files" do
       png_path = "spec/fixtures/auto_detect.png"
-      FileUtils.mkdir_p("spec/fixtures")
       
       system(<<~PYTHON)
         python3 -c "
@@ -205,7 +201,6 @@ RSpec.describe "OCR with Tesseract" do
   describe "#parse_bytes with image auto-detection" do
     it "detects PNG from magic bytes and performs OCR" do
       png_path = "spec/fixtures/magic_detect.png"
-      FileUtils.mkdir_p("spec/fixtures")
       
       system(<<~PYTHON)
         python3 -c "
@@ -233,7 +228,6 @@ RSpec.describe "OCR with Tesseract" do
     
     it "detects JPEG from magic bytes" do
       jpg_path = "spec/fixtures/magic_jpg.jpg"
-      FileUtils.mkdir_p("spec/fixtures")
       
       system(<<~PYTHON)
         python3 -c "
@@ -281,7 +275,6 @@ RSpec.describe "OCR with Tesseract" do
   describe "Performance" do
     it "handles reasonably sized images" do
       large_image_path = "spec/fixtures/large_ocr.png"
-      FileUtils.mkdir_p("spec/fixtures")
       
       # Create a larger image (but not too large for testing)
       system(<<~PYTHON)
@@ -314,7 +307,6 @@ RSpec.describe "OCR with Tesseract" do
       # This test verifies that the gem works without tesseract installed
       # by successfully performing OCR
       simple_image_path = "spec/fixtures/static_test.png"
-      FileUtils.mkdir_p("spec/fixtures")
       
       system(<<~PYTHON)
         python3 -c "

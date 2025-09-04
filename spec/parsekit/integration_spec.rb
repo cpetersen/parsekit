@@ -7,7 +7,9 @@ RSpec.describe "ParseKit Integration" do
     context "with sample documents" do
       it "extracts text from PDF files" do
         pdf_file = "spec/fixtures/sample.pdf"
-        skip "Requires sample PDF file" unless File.exist?(pdf_file)
+        unless File.exist?(pdf_file)
+          fail "Sample PDF file is missing: #{pdf_file}"
+        end
 
         result = parser.parse_file(pdf_file)
         expect(result).to be_a(String)
@@ -21,7 +23,9 @@ RSpec.describe "ParseKit Integration" do
 
       it "extracts text from Word documents" do
         docx_file = "spec/fixtures/sample.docx"
-        skip "Requires sample DOCX file" unless File.exist?(docx_file)
+        unless File.exist?(docx_file)
+          fail "Sample DOCX file is missing: #{docx_file}"
+        end
 
         result = parser.parse_file(docx_file)
         expect(result).to be_a(String)
@@ -35,7 +39,9 @@ RSpec.describe "ParseKit Integration" do
 
       it "extracts text from Excel files" do
         xlsx_file = "spec/fixtures/sample.xlsx"
-        skip "Requires sample XLSX file" unless File.exist?(xlsx_file)
+        unless File.exist?(xlsx_file)
+          fail "Sample XLSX file is missing: #{xlsx_file}"
+        end
 
         result = parser.parse_file(xlsx_file)
         expect(result).to be_a(String)
@@ -54,7 +60,9 @@ RSpec.describe "ParseKit Integration" do
 
       it "performs OCR on images" do
         image_file = "spec/fixtures/sample.png"
-        skip "Requires sample image with text" unless File.exist?(image_file)
+        unless File.exist?(image_file)
+          fail "Sample PNG file is missing: #{image_file}"
+        end
 
         result = parser.parse_file(image_file)
         expect(result).to be_a(String)
@@ -66,7 +74,9 @@ RSpec.describe "ParseKit Integration" do
       end
       it "extracts text from PowerPoint presentations" do
         pptx_file = "spec/fixtures/sample.pptx"
-        skip "Requires sample PPTX file" unless File.exist?(pptx_file)
+        unless File.exist?(pptx_file)
+          fail "Sample PPTX file is missing: #{pptx_file}"
+        end
 
         result = parser.parse_file(pptx_file)
         expect(result).to be_a(String)
@@ -151,7 +161,9 @@ RSpec.describe "ParseKit Integration" do
 
     it "reads sample.txt fixture correctly" do
       txt_file = "spec/fixtures/sample.txt"
-      skip "Requires sample TXT file" unless File.exist?(txt_file)
+      unless File.exist?(txt_file)
+        fail "Sample TXT file is missing: #{txt_file}"
+      end
 
       result = ParseKit.parse_file(txt_file)
       expect(result).to be_a(String)
