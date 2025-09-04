@@ -64,19 +64,17 @@ RSpec.describe "ParseKit Integration" do
           fail "Sample XLS file is missing: #{xls_file}"
         end
 
-        # XLS is legacy binary format and may not be fully supported
-        begin
-          result = parser.parse_file(xls_file)
-          expect(result).to be_a(String)
-          expect(result).not_to be_empty
+        # XLS files are incorrectly detected as XLSX format, causing wrong parser to be used
+        # This exposes a limitation: XLS (binary) vs XLSX (XML) format detection issue
+        expect {
+          parser.parse_file(xls_file)
+        }.to raise_error(RuntimeError, /Failed to parse Excel file/) do |error|
+          # The current error reveals XLS files are being parsed as XLSX (looking for XML structure)
+          # Ideally this should be: "XLS binary format not supported, please use XLSX"
+          # But currently gives low-level XML parsing error:
+          expect(error.message).to match(/xl\/_rels.*workbook\.xml\.rels|File not found/i)
 
-          # If parsing succeeds, should contain some data
-          expect(result.length).to be > 10
-        rescue RuntimeError => e
-          # XLS parsing may not be fully implemented for binary format
-          # This is acceptable as XLS is legacy format
-          expect(e.message).to include("Failed to parse Excel file")
-          skip "XLS binary format parsing not fully supported: #{e.message}"
+          # This test documents that XLS support needs improvement in format detection
         end
       end
 

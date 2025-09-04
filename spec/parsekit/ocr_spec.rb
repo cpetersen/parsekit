@@ -95,67 +95,106 @@ let(:test_image_path) { File.join(temp_dir, "ocr_test.png") }
         end
       end
 
-      it "handles TIFF images (uncompressed)" do
-        tif_file = "spec/fixtures/sample.tif"
+      it "handles TIFF images with unsupported RGB palette (uncompressed)" do
+        tif_file = "spec/fixtures/sample_unsupported_palette_none.tif"
         unless File.exist?(tif_file)
-          fail "Sample TIFF file is missing: #{tif_file}"
+          fail "Unsupported palette TIFF file is missing: #{tif_file}"
         end
 
         image_data = File.read(tif_file, mode: 'rb').bytes
-        begin
-          result = parser.ocr_image(image_data)
-          expect(result).to be_a(String)
-          expect(result).not_to be_empty
-          # Should extract some readable text from the TIFF
-        rescue RuntimeError => e
-          if e.message.include?("unsupported") || e.message.include?("RGBPalette")
-            skip "TIFF format not supported by image decoder: #{e.message}"
-          else
-            raise e
-          end
+        # This TIFF uses unsupported RGBPalette format - should give clear error
+        expect {
+          parser.ocr_image(image_data)
+        }.to raise_error(RuntimeError, /Failed to load image/) do |error|
+          expect(error.message).to match(/RGBPalette.*unsupported|does not support.*format features/i)
         end
       end
 
-      it "handles TIFF images with LZW compression" do
-        tif_file = "spec/fixtures/sample_lzw.tif"
+      it "handles TIFF images with unsupported RGB palette (LZW compression)" do
+        tif_file = "spec/fixtures/sample_unsupported_palette_lzw.tif"
         unless File.exist?(tif_file)
-          fail "Sample LZW TIFF file is missing: #{tif_file}"
+          fail "Unsupported palette LZW TIFF file is missing: #{tif_file}"
         end
 
         image_data = File.read(tif_file, mode: 'rb').bytes
-        begin
-          result = parser.ocr_image(image_data)
-          expect(result).to be_a(String)
-          expect(result).not_to be_empty
-          # Should extract same text as uncompressed version
-        rescue RuntimeError => e
-          if e.message.include?("unsupported") || e.message.include?("RGBPalette")
-            skip "TIFF format not supported by image decoder: #{e.message}"
-          else
-            raise e
-          end
+        # LZW TIFF with unsupported RGBPalette format - should give clear error
+        expect {
+          parser.ocr_image(image_data)
+        }.to raise_error(RuntimeError, /Failed to load image/) do |error|
+          expect(error.message).to match(/RGBPalette.*unsupported|does not support.*format features/i)
         end
       end
 
-      it "handles TIFF images with ZIP compression" do
-        tif_file = "spec/fixtures/sample_zip.tif"
+      it "handles TIFF images with unsupported RGB palette (ZIP compression)" do
+        tif_file = "spec/fixtures/sample_unsupported_palette_zip.tif"
         unless File.exist?(tif_file)
-          fail "Sample ZIP TIFF file is missing: #{tif_file}"
+          fail "Unsupported palette ZIP TIFF file is missing: #{tif_file}"
         end
 
         image_data = File.read(tif_file, mode: 'rb').bytes
-        begin
-          result = parser.ocr_image(image_data)
-          expect(result).to be_a(String)
-          expect(result).not_to be_empty
-          # Should extract same text regardless of compression
-        rescue RuntimeError => e
-          if e.message.include?("unsupported") || e.message.include?("RGBPalette")
-            skip "TIFF format not supported by image decoder: #{e.message}"
-          else
-            raise e
-          end
+        # ZIP TIFF with unsupported RGBPalette format - should give clear error
+        expect {
+          parser.ocr_image(image_data)
+        }.to raise_error(RuntimeError, /Failed to load image/) do |error|
+          expect(error.message).to match(/RGBPalette.*unsupported|does not support.*format features/i)
         end
+      end
+
+      # Tests for supported TIFF formats
+      it "extracts text from grayscale TIFF (uncompressed)" do
+        tif_file = "spec/fixtures/sample_grayscale_none.tif"
+        unless File.exist?(tif_file)
+          fail "Grayscale TIFF file is missing: #{tif_file}"
+        end
+
+        image_data = File.read(tif_file, mode: 'rb').bytes
+        result = parser.ocr_image(image_data)
+        expect(result).to be_a(String)
+        expect(result).not_to be_empty
+        # Should extract the same text content as PNG version
+        expect(result).to match(/OCR TEST IMAGE|text should be extracted/i)
+      end
+
+      it "extracts text from RGB TIFF with LZW compression" do
+        tif_file = "spec/fixtures/sample_rgb_lzw.tif"
+        unless File.exist?(tif_file)
+          fail "RGB LZW TIFF file is missing: #{tif_file}"
+        end
+
+        image_data = File.read(tif_file, mode: 'rb').bytes
+        result = parser.ocr_image(image_data)
+        expect(result).to be_a(String)
+        expect(result).not_to be_empty
+        # Should extract readable text from compressed TIFF
+        expect(result).to match(/OCR TEST IMAGE|text should be extracted/i)
+      end
+
+      it "extracts text from RGB TIFF with ZIP compression" do
+        tif_file = "spec/fixtures/sample_rgb_zip.tif"
+        unless File.exist?(tif_file)
+          fail "RGB ZIP TIFF file is missing: #{tif_file}"
+        end
+
+        image_data = File.read(tif_file, mode: 'rb').bytes
+        result = parser.ocr_image(image_data)
+        expect(result).to be_a(String)
+        expect(result).not_to be_empty
+        # Should extract readable text regardless of compression type
+        expect(result).to match(/OCR TEST IMAGE|text should be extracted/i)
+      end
+
+      it "extracts text from RGBA TIFF (uncompressed)" do
+        tif_file = "spec/fixtures/sample_rgba_none.tif"
+        unless File.exist?(tif_file)
+          fail "RGBA TIFF file is missing: #{tif_file}"
+        end
+
+        image_data = File.read(tif_file, mode: 'rb').bytes
+        result = parser.ocr_image(image_data)
+        expect(result).to be_a(String)
+        expect(result).not_to be_empty
+        # Should handle TIFF with alpha channel
+        expect(result).to match(/OCR TEST IMAGE|text should be extracted/i)
       end
     end
 
