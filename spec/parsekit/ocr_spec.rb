@@ -8,19 +8,17 @@ RSpec.describe "OCR with Tesseract" do
     return @tesseract_available if defined?(@tesseract_available)
 
     begin
-      # Try a simple OCR operation to check if Tesseract works
-      test_data = [137, 80, 78, 71, 13, 10, 26, 10] # PNG signature
-      parser.ocr_image(test_data)
-      @tesseract_available = true
-    rescue RuntimeError => e
-      @tesseract_available = !e.message.include?("Tesseract not found")
+      # Check if tesseract command exists in system PATH
+      system("tesseract --version > /dev/null 2>&1")
+      @tesseract_available = $?.success?
+    rescue
+      @tesseract_available = false
     end
+
+    @tesseract_available
   end
 
-  # Skip all OCR tests if Tesseract not available (for CI)
-  before(:each) do
-    skip "Tesseract not available in CI environment" unless tesseract_available?
-  end
+  # Note: Individual tests check tesseract_available? to skip when needed
 
   describe "#ocr_image" do
     context "with valid image data" do
@@ -50,7 +48,9 @@ let(:test_image_path) { File.join(temp_dir, "ocr_test.png") }
       end
 
       it "extracts text from PNG image" do
-        skip "Tesseract not available in CI environment" unless tesseract_available?
+        unless system("tesseract --version > /dev/null 2>&1")
+          skip "Tesseract not available in CI environment"
+        end
 
         # Use static fixture instead of dynamic generation
         test_image_path = "spec/fixtures/ocr_test.png"
@@ -170,6 +170,10 @@ let(:test_image_path) { File.join(temp_dir, "ocr_test.png") }
 
       # Tests for supported TIFF formats
       it "extracts text from grayscale TIFF (uncompressed)" do
+        unless system("tesseract --version > /dev/null 2>&1")
+          skip "Tesseract not available in CI environment"
+        end
+
         tif_file = "spec/fixtures/sample_grayscale_none.tif"
         unless File.exist?(tif_file)
           fail "Grayscale TIFF file is missing: #{tif_file}"
@@ -184,6 +188,10 @@ let(:test_image_path) { File.join(temp_dir, "ocr_test.png") }
       end
 
       it "extracts text from RGB TIFF with LZW compression" do
+        unless system("tesseract --version > /dev/null 2>&1")
+          skip "Tesseract not available in CI environment"
+        end
+
         tif_file = "spec/fixtures/sample_rgb_lzw.tif"
         unless File.exist?(tif_file)
           fail "RGB LZW TIFF file is missing: #{tif_file}"
@@ -198,6 +206,10 @@ let(:test_image_path) { File.join(temp_dir, "ocr_test.png") }
       end
 
       it "extracts text from RGB TIFF with ZIP compression" do
+        unless system("tesseract --version > /dev/null 2>&1")
+          skip "Tesseract not available in CI environment"
+        end
+
         tif_file = "spec/fixtures/sample_rgb_zip.tif"
         unless File.exist?(tif_file)
           fail "RGB ZIP TIFF file is missing: #{tif_file}"
@@ -212,6 +224,10 @@ let(:test_image_path) { File.join(temp_dir, "ocr_test.png") }
       end
 
       it "extracts text from RGBA TIFF (uncompressed)" do
+        unless system("tesseract --version > /dev/null 2>&1")
+          skip "Tesseract not available in CI environment"
+        end
+
         tif_file = "spec/fixtures/sample_rgba_none.tif"
         unless File.exist?(tif_file)
           fail "RGBA TIFF file is missing: #{tif_file}"

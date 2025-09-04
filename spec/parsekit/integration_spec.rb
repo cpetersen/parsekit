@@ -79,12 +79,9 @@ RSpec.describe "ParseKit Integration" do
       end
 
       it "performs OCR on images" do
-        # Add Tesseract availability check
-        begin
-          test_data = [137, 80, 78, 71, 13, 10, 26, 10] # PNG signature
-          parser.parse_bytes(test_data)
-        rescue RuntimeError => e
-          skip "Tesseract not available in CI environment" if e.message.include?("Tesseract not found")
+        # Check if Tesseract is available at system level
+        unless system("tesseract --version > /dev/null 2>&1")
+          skip "Tesseract not available in CI environment"
         end
 
         image_file = "spec/fixtures/sample.png"
