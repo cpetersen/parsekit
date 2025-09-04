@@ -87,21 +87,21 @@ RSpec.describe "ParseKit Error Handling" do
     end
 
     it "handles empty file paths" do
-      expect { parser.parse_file("") }.to raise_error
+      expect { parser.parse_file("") }.to raise_error(IOError, /No such file or directory/)
     end
 
     it "handles nil file paths" do
-      expect { parser.parse_file(nil) }.to raise_error
+      expect { parser.parse_file(nil) }.to raise_error(TypeError, /no implicit conversion of.*into String/)
     end
   end
 
   describe "invalid input handling" do
     it "handles empty byte arrays" do
-      expect { parser.parse_bytes([]) }.to raise_error
+      expect { parser.parse_bytes([]) }.to raise_error(ArgumentError, /cannot be empty/)
     end
 
     it "handles nil byte input" do
-      expect { parser.parse_bytes(nil) }.to raise_error
+      expect { parser.parse_bytes(nil) }.to raise_error(TypeError, /no implicit conversion of.*into Array/)
     end
 
     it "handles malformed string input" do
