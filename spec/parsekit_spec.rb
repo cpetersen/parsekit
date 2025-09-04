@@ -111,34 +111,9 @@ let(:test_file) { File.join(temp_dir, "test.txt") }
   end
 
   describe "markdown file parsing" do
-    require 'tmpdir'
-    let(:temp_dir) { Dir.mktmpdir }
-    let(:md_file) { File.join(temp_dir, "sample.md") }
+    let(:md_file) { "spec/fixtures/sample.md" }
 
-    before do
-      File.write(md_file, <<~MARKDOWN)
-        # Markdown document for testing
 
-        This is a **Bold text** and this is *Italic text*.
-
-        Hello 世界 🌍
-
-        ## Table
-
-        | Header 1 | Header 2 |
-        |----------|----------|
-        | Row 1    | Row 1    |
-
-        ## Bullet points
-
-        - First item
-        - Second item
-      MARKDOWN
-    end
-
-    after do
-      FileUtils.rm_rf(temp_dir) if Dir.exist?(temp_dir)
-    end
 
     it "parses markdown files" do
       result = described_class.parse_file(md_file)
@@ -174,41 +149,9 @@ let(:test_file) { File.join(temp_dir, "test.txt") }
   end
 
   describe "HTML file parsing" do
-    require 'tmpdir'
-    let(:temp_dir) { Dir.mktmpdir }
-    let(:html_file) { File.join(temp_dir, "sample.html") }
+    let(:html_file) { "spec/fixtures/sample.html" }
 
-    before do
-      File.write(html_file, <<~HTML)
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Sample HTML Document</title>
-        </head>
-        <body>
-          <h1>HTML document for testing</h1>
-          <p>Welcome to the HTML Document</p>
-          <p>This is <strong>Bold text</strong> and this is <em>Italic text</em>.</p>
-          <p>Hello 世界 🌍</p>
-          <table>
-            <tr><th>Header 1</th><th>Header 2</th></tr>
-            <tr><td>Row 1</td><td>Data 1</td></tr>
-            <tr><td>Row 2</td><td>Data 2</td></tr>
-          </table>
-          <h2>Bullet points</h2>
-          <ul>
-            <li>First item</li>
-            <li>Second item</li>
-          </ul>
-          <p>Visit <a href="https://example.com">Link</a> for more info.</p>
-        </body>
-        </html>
-      HTML
-    end
 
-    after do
-      FileUtils.rm_rf(temp_dir) if Dir.exist?(temp_dir)
-    end
 
     it "parses HTML files" do
       result = described_class.parse_file(html_file)
