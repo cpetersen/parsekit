@@ -3,6 +3,25 @@
 RSpec.describe "OCR with Tesseract" do
   let(:parser) { ParseKit::Parser.new }
 
+  # Check if Tesseract is available for OCR testing
+  def tesseract_available?
+    return @tesseract_available if defined?(@tesseract_available)
+
+    begin
+      # Try a simple OCR operation to check if Tesseract works
+      test_data = [137, 80, 78, 71, 13, 10, 26, 10] # PNG signature
+      parser.ocr_image(test_data)
+      @tesseract_available = true
+    rescue RuntimeError => e
+      @tesseract_available = !e.message.include?("Tesseract not found")
+    end
+  end
+
+  # Skip all OCR tests if Tesseract not available (for CI)
+  before(:each) do
+    skip "Tesseract not available in CI environment" unless tesseract_available?
+  end
+
   describe "#ocr_image" do
     context "with valid image data" do
       require 'tmpdir'
@@ -31,10 +50,19 @@ let(:test_image_path) { File.join(temp_dir, "ocr_test.png") }
       end
 
       it "extracts text from PNG image" do
+        skip "Tesseract not available in CI environment" unless tesseract_available?
+
+        # Use static fixture instead of dynamic generation
+        test_image_path = "spec/fixtures/ocr_test.png"
+        unless File.exist?(test_image_path)
+          fail "OCR test image fixture missing: #{test_image_path}"
+        end
+
         image_data = File.read(test_image_path, mode: 'rb').bytes
         result = parser.ocr_image(image_data)
         expect(result).to be_a(String)
-        expect(result).to include("Test OCR Text")
+        expect(result).to include("OCR TEST IMAGE")
+        expect(result).to include("This text should be extracted")
       end
     end
 
