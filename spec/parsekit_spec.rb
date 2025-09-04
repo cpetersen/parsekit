@@ -219,6 +219,18 @@ let(:test_file) { File.join(temp_dir, "test.txt") }
       expect(described_class.supports_file?("page.html")).to be true
       expect(described_class.supports_file?("index.HTM")).to be true
     end
+
+    it "correctly handles HTM files" do
+      htm_result = described_class.parse_file("spec/fixtures/sample.htm")
+
+      # HTM files should be parseable and return content
+      expect(htm_result).to be_a(String)
+      expect(htm_result).not_to be_empty
+      expect(htm_result).to include("Welcome to the HTML Document")
+
+      # Note: HTM might be detected as text format, so it could preserve HTML tags
+      # This test verifies the file is readable and contains expected content
+    end
   end
 
   describe "error classes" do
