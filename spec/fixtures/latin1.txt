@@ -1,0 +1,1 @@
+This is Latin-1 encoded text with special characters: café, résumé, naïve, piñata
