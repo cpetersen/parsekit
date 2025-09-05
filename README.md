@@ -37,13 +37,8 @@ gem install parsekit
 - Ruby >= 3.0.0
 - Rust toolchain (stable)
 - C compiler (for linking)
-- System libraries for document parsing:
-  - **macOS**: `brew install leptonica tesseract poppler`
-  - **Ubuntu/Debian**: `sudo apt-get install libleptonica-dev libtesseract-dev libpoppler-cpp-dev`
-  - **Fedora/RHEL**: `sudo dnf install leptonica-devel tesseract-devel poppler-cpp-devel`
-  - **Windows**: See [DEPENDENCIES.md](DEPENDENCIES.md) for MSYS2 instructions
 
-For detailed installation instructions and troubleshooting, see [DEPENDENCIES.md](DEPENDENCIES.md).
+That's it! ParseKit bundles all necessary libraries including Tesseract for OCR, so you don't need to install any system dependencies.
 
 ## Usage
 
@@ -127,7 +122,7 @@ excel_text = parser.parse_xlsx(excel_data)
 | Word | .docx | `parse_docx` | Office Open XML format |
 | Excel | .xlsx, .xls | `parse_xlsx` | Both modern and legacy formats |
 | PowerPoint | .pptx | - | **Not yet supported** - see [implementation plan](docs/PPTX_PLAN.md) |
-| Images | .png, .jpg, .jpeg, .tiff, .bmp | `ocr_image` | OCR via embedded Tesseract |
+| Images | .png, .jpg, .jpeg, .tiff, .bmp | `ocr_image` | OCR via bundled Tesseract |
 | JSON | .json | `parse_json` | Pretty-printed output |
 | XML/HTML | .xml, .html | `parse_xml` | Extracts text content |
 | Text | .txt, .csv, .md | `parse_text` | With encoding detection |
@@ -166,6 +161,27 @@ To run tests with coverage:
 rake dev:coverage
 ```
 
+### OCR Mode Configuration
+
+By default, ParseKit bundles Tesseract for zero-dependency OCR support. Advanced users who already have Tesseract installed system-wide and want faster gem installation can use system mode:
+
+**Using system Tesseract during installation:**
+```bash
+gem install parsekit -- --no-default-features
+```
+
+**For development with system Tesseract:**
+```bash
+rake compile CARGO_FEATURES=""  # Disables bundled-tesseract feature
+```
+
+**System Tesseract requirements:**
+- **macOS**: `brew install tesseract`
+- **Ubuntu/Debian**: `sudo apt-get install libtesseract-dev`
+- **Fedora/RHEL**: `sudo dnf install tesseract-devel`
+
+The bundled mode adds ~1-3 minutes to initial gem installation but provides a completely self-contained experience with no external dependencies.
+
 ## Architecture
 
 ParseKit uses a hybrid Ruby/Rust architecture:
@@ -173,7 +189,7 @@ ParseKit uses a hybrid Ruby/Rust architecture:
 - **Ruby Layer**: Provides convenient API and format detection
 - **Rust Layer**: Implements high-performance parsing using:
   - MuPDF for PDF text extraction (statically linked)
-  - rusty-tesseract for OCR (with embedded Tesseract)
+  - tesseract-rs for OCR (with bundled Tesseract by default)
   - Pure Rust libraries for DOCX/XLSX parsing
   - Magnus for Ruby-Rust FFI bindings
 
