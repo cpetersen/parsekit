@@ -127,6 +127,20 @@ impl Parser {
 
     /// Perform OCR on image data using Tesseract
     fn ocr_image(&self, data: Vec<u8>) -> Result<String, Error> {
+        // For testing, we'll try both implementations
+        #[cfg(feature = "bundled-tesseract")]
+        {
+            self.ocr_image_bundled(data)
+        }
+        
+        #[cfg(not(feature = "bundled-tesseract"))]
+        {
+            self.ocr_image_system(data)
+        }
+    }
+    
+    /// OCR using system tesseract (rusty-tesseract)
+    fn ocr_image_system(&self, data: Vec<u8>) -> Result<String, Error> {
         use rusty_tesseract::{Args, Image};
 
         // Load image from memory
@@ -164,6 +178,60 @@ impl Parser {
             Err(e) => Err(Error::new(
                 magnus::exception::runtime_error(),
                 format!("Failed to perform OCR: {}", e),
+            )),
+        }
+    }
+    
+    /// OCR using bundled tesseract (tesseract-rs)
+    fn ocr_image_bundled(&self, data: Vec<u8>) -> Result<String, Error> {
+        use tesseract_rs::TesseractAPI;
+        
+        // Create tesseract instance with bundled libraries
+        let tesseract = TesseractAPI::new();
+        
+        // Initialize with English language
+        // For bundled mode, we can use "." as the tessdata directory
+        if let Err(e) = tesseract.init(".", "eng") {
+            return Err(Error::new(
+                magnus::exception::runtime_error(),
+                format!("Failed to initialize Tesseract: {}", e),
+            ))
+        }
+        
+        // Load the image from bytes
+        let img = match image::load_from_memory(&data) {
+            Ok(img) => img,
+            Err(e) => return Err(Error::new(
+                magnus::exception::runtime_error(),
+                format!("Failed to load image: {}", e),
+            ))
+        };
+        
+        // Convert to RGBA8 format
+        let rgba_img = img.to_rgba8();
+        let (width, height) = rgba_img.dimensions();
+        let raw_data = rgba_img.into_raw();
+        
+        // Set image data
+        if let Err(e) = tesseract.set_image(
+            &raw_data,
+            width as i32,
+            height as i32,
+            4,  // bytes per pixel (RGBA)
+            (width * 4) as i32,  // bytes per line
+        ) {
+            return Err(Error::new(
+                magnus::exception::runtime_error(),
+                format!("Failed to set image: {}", e),
+            ))
+        }
+        
+        // Extract text
+        match tesseract.get_utf8_text() {
+            Ok(text) => Ok(text.trim().to_string()),
+            Err(e) => Err(Error::new(
+                magnus::exception::runtime_error(),
+                format!("Failed to perform bundled OCR: {}", e),
             )),
         }
     }
