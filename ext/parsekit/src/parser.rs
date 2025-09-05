@@ -183,6 +183,7 @@ impl Parser {
     }
     
     /// OCR using bundled tesseract (tesseract-rs)
+    #[cfg(feature = "bundled-tesseract")]
     fn ocr_image_bundled(&self, data: Vec<u8>) -> Result<String, Error> {
         use tesseract_rs::TesseractAPI;
         
