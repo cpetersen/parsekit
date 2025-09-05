@@ -136,20 +136,29 @@ impl Parser {
         // Even in bundled mode, we need to find tessdata files
         #[cfg(feature = "bundled-tesseract")]
         let init_result = {
-            // Try common tessdata paths even in bundled mode
-            let tessdata_paths = vec![
-                "/usr/share/tessdata",
-                "/usr/local/share/tessdata", 
-                "/opt/homebrew/share/tessdata",
-                "/opt/local/share/tessdata",
-                ".",  // Try current directory as fallback
-            ];
+            // Build list of tessdata paths to try
+            let mut tessdata_paths = Vec::new();
+            
+            // Check TESSDATA_PREFIX environment variable first (for CI)
+            if let Ok(env_path) = std::env::var("TESSDATA_PREFIX") {
+                tessdata_paths.push(env_path);
+            }
+            
+            // Add common system paths
+            tessdata_paths.extend_from_slice(&[
+                "/usr/share/tessdata".to_string(),
+                "/usr/local/share/tessdata".to_string(), 
+                "/opt/homebrew/share/tessdata".to_string(),
+                "/opt/local/share/tessdata".to_string(),
+                "tessdata".to_string(),  // Local tessdata directory
+                ".".to_string(),  // Current directory as fallback
+            ]);
             
             let mut result = Err(tesseract_rs::TesseractError::InitError);
             for path in &tessdata_paths {
                 // Check if path exists first to avoid noisy error messages
                 if std::path::Path::new(path).exists() {
-                    if tesseract.init(path, "eng").is_ok() {
+                    if tesseract.init(path.as_str(), "eng").is_ok() {
                         result = Ok(());
                         break;
                     }
