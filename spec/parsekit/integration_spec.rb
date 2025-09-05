@@ -79,10 +79,7 @@ RSpec.describe "ParseKit Integration" do
       end
 
       it "performs OCR on images" do
-        # Check if Tesseract is available at system level
-        unless system("tesseract --version > /dev/null 2>&1")
-          skip "Tesseract not available in CI environment"
-        end
+        # Tesseract is bundled, no need to check availability
 
         image_file = "spec/fixtures/sample.png"
         unless File.exist?(image_file)
