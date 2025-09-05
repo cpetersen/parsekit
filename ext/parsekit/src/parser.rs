@@ -1,5 +1,5 @@
 use magnus::{
-    class, function, method, prelude::*, scan_args, Error, RHash, RModule, Ruby, Value, Module,
+    class, function, method, prelude::*, scan_args, Error, Module, RHash, RModule, Ruby, Value,
 };
 use std::path::Path;
 
@@ -33,9 +33,9 @@ impl Parser {
     fn new(ruby: &Ruby, args: &[Value]) -> Result<Self, Error> {
         let args = scan_args::scan_args::<(), (Option<RHash>,), (), (), (), ()>(args)?;
         let options = args.optional.0;
-        
+
         let mut config = ParserConfig::default();
-        
+
         if let Some(opts) = options {
             if let Some(strict) = opts.get(ruby.to_symbol("strict_mode")) {
                 config.strict_mode = bool::try_convert(strict)?;
@@ -50,27 +50,31 @@ impl Parser {
                 config.max_size = usize::try_convert(max_size)?;
             }
         }
-        
+
         Ok(Self { config })
     }
-    
+
     /// Parse input bytes based on file type (internal helper)
     fn parse_bytes_internal(&self, data: Vec<u8>, filename: Option<&str>) -> Result<String, Error> {
         // Check size limit
         if data.len() > self.config.max_size {
             return Err(Error::new(
                 magnus::exception::runtime_error(),
-                format!("File size {} exceeds maximum allowed size {}", data.len(), self.config.max_size),
+                format!(
+                    "File size {} exceeds maximum allowed size {}",
+                    data.len(),
+                    self.config.max_size
+                ),
             ));
         }
-        
+
         // Detect file type from extension or content
         let file_type = if let Some(name) = filename {
             Self::detect_type_from_filename(name)
         } else {
             Self::detect_type_from_content(&data)
         };
-        
+
         match file_type.as_str() {
             "pdf" => self.parse_pdf(data),
             "docx" => self.parse_docx(data),
@@ -82,7 +86,7 @@ impl Parser {
             _ => self.parse_text(data), // Default to text parsing
         }
     }
-    
+
     /// Detect file type from filename extension
     fn detect_type_from_filename(filename: &str) -> String {
         let path = Path::new(filename);
@@ -91,7 +95,7 @@ impl Parser {
             None => "txt".to_string(),
         }
     }
-    
+
     /// Detect file type from content (basic detection)
     fn detect_type_from_content(data: &[u8]) -> String {
         if data.starts_with(b"%PDF") {
@@ -120,65 +124,71 @@ impl Parser {
             "txt".to_string()
         }
     }
-    
+
     /// Perform OCR on image data using Tesseract
     fn ocr_image(&self, data: Vec<u8>) -> Result<String, Error> {
-        use rusty_tesseract::{Image, Args};
-        
+        use rusty_tesseract::{Args, Image};
+
         // Load image from memory
         let img = match image::load_from_memory(&data) {
             Ok(img) => img,
-            Err(e) => return Err(Error::new(
-                magnus::exception::runtime_error(),
-                format!("Failed to load image: {}", e),
-            ))
+            Err(e) => {
+                return Err(Error::new(
+                    magnus::exception::runtime_error(),
+                    format!("Failed to load image: {}", e),
+                ))
+            }
         };
-        
+
         // Create rusty_tesseract Image from DynamicImage
         let tess_img = match Image::from_dynamic_image(&img) {
             Ok(img) => img,
-            Err(e) => return Err(Error::new(
-                magnus::exception::runtime_error(),
-                format!("Failed to convert image for OCR: {}", e),
-            ))
+            Err(e) => {
+                return Err(Error::new(
+                    magnus::exception::runtime_error(),
+                    format!("Failed to convert image for OCR: {}", e),
+                ))
+            }
         };
-        
+
         // Set up OCR arguments
         let mut args = Args::default();
         args.lang = "eng".to_string();
         // Optional: Add more configuration
-        // args.config_variables.insert("tessedit_char_whitelist".to_string(), 
+        // args.config_variables.insert("tessedit_char_whitelist".to_string(),
         //     "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .,!?-".to_string());
-        
+
         // Perform OCR
         match rusty_tesseract::image_to_string(&tess_img, &args) {
             Ok(text) => Ok(text.trim().to_string()),
             Err(e) => Err(Error::new(
                 magnus::exception::runtime_error(),
                 format!("Failed to perform OCR: {}", e),
-            ))
+            )),
         }
     }
-    
+
     /// Parse PDF files using MuPDF (statically linked) - exposed to Ruby
     fn parse_pdf(&self, data: Vec<u8>) -> Result<String, Error> {
         use mupdf::Document;
-        
+
         // Try to load the PDF from memory
         // The magic parameter helps MuPDF identify the file type
         match Document::from_bytes(&data, "pdf") {
             Ok(doc) => {
                 let mut all_text = String::new();
-                
+
                 // Get page count - this returns a Result
                 let page_count = match doc.page_count() {
                     Ok(count) => count,
-                    Err(e) => return Err(Error::new(
-                        magnus::exception::runtime_error(),
-                        format!("Failed to get page count: {}", e),
-                    ))
+                    Err(e) => {
+                        return Err(Error::new(
+                            magnus::exception::runtime_error(),
+                            format!("Failed to get page count: {}", e),
+                        ))
+                    }
                 };
-                
+
                 // Iterate through pages
                 for page_num in 0..page_count {
                     match doc.load_page(page_num) {
@@ -195,9 +205,12 @@ impl Parser {
                         Err(_) => continue,
                     }
                 }
-                
+
                 if all_text.is_empty() {
-                    Ok("PDF contains no extractable text (might be scanned/image-based)".to_string())
+                    Ok(
+                        "PDF contains no extractable text (might be scanned/image-based)"
+                            .to_string(),
+                    )
                 } else {
                     Ok(all_text.trim().to_string())
                 }
@@ -205,18 +218,18 @@ impl Parser {
             Err(e) => Err(Error::new(
                 magnus::exception::runtime_error(),
                 format!("Failed to parse PDF: {}", e),
-            ))
+            )),
         }
     }
-    
+
     /// Parse DOCX (Word) files - exposed to Ruby
     fn parse_docx(&self, data: Vec<u8>) -> Result<String, Error> {
         use docx_rs::read_docx;
-        
+
         match read_docx(&data) {
             Ok(docx) => {
                 let mut result = String::new();
-                
+
                 // Extract text from all document children
                 // For simplicity, we'll focus on paragraphs only for now
                 // Tables require more complex handling with the current API
@@ -238,29 +251,29 @@ impl Parser {
                     // table.rows -> TableChild::TableRow -> row.cells -> TableRowChild
                     // which has a more complex structure in docx-rs
                 }
-                
+
                 Ok(result.trim().to_string())
             }
             Err(e) => Err(Error::new(
                 magnus::exception::runtime_error(),
                 format!("Failed to parse DOCX file: {}", e),
-            ))
+            )),
         }
     }
-    
+
     /// Parse Excel files - exposed to Ruby
     fn parse_xlsx(&self, data: Vec<u8>) -> Result<String, Error> {
         use calamine::{Reader, Xlsx};
         use std::io::Cursor;
-        
+
         let cursor = Cursor::new(data);
         match Xlsx::new(cursor) {
             Ok(mut workbook) => {
                 let mut result = String::new();
-                
+
                 for sheet_name in workbook.sheet_names().to_owned() {
                     result.push_str(&format!("Sheet: {}\n", sheet_name));
-                    
+
                     if let Ok(range) = workbook.worksheet_range(&sheet_name) {
                         for row in range.rows() {
                             for cell in row {
@@ -271,34 +284,36 @@ impl Parser {
                     }
                     result.push('\n');
                 }
-                
+
                 Ok(result)
             }
             Err(e) => Err(Error::new(
                 magnus::exception::runtime_error(),
                 format!("Failed to parse Excel file: {}", e),
-            ))
+            )),
         }
     }
-    
+
     /// Parse JSON files - exposed to Ruby
     fn parse_json(&self, data: Vec<u8>) -> Result<String, Error> {
         let text = String::from_utf8_lossy(&data);
         match serde_json::from_str::<serde_json::Value>(&text) {
-            Ok(json) => Ok(serde_json::to_string_pretty(&json).unwrap_or_else(|_| text.to_string())),
+            Ok(json) => {
+                Ok(serde_json::to_string_pretty(&json).unwrap_or_else(|_| text.to_string()))
+            }
             Err(_) => Ok(text.to_string()),
         }
     }
-    
+
     /// Parse XML/HTML files - exposed to Ruby
     fn parse_xml(&self, data: Vec<u8>) -> Result<String, Error> {
         use quick_xml::events::Event;
         use quick_xml::Reader;
-        
+
         let mut reader = Reader::from_reader(&data[..]);
         let mut txt = String::new();
         let mut buf = Vec::new();
-        
+
         loop {
             match reader.read_event_into(&mut buf) {
                 Ok(Event::Text(e)) => {
@@ -316,15 +331,15 @@ impl Parser {
             }
             buf.clear();
         }
-        
+
         Ok(txt.trim().to_string())
     }
-    
+
     /// Parse plain text with encoding detection - exposed to Ruby
     fn parse_text(&self, data: Vec<u8>) -> Result<String, Error> {
         // Detect encoding
         let (decoded, _encoding, malformed) = encoding_rs::UTF_8.decode(&data);
-        
+
         if malformed {
             // Try other encodings
             let (decoded, _encoding, _malformed) = encoding_rs::WINDOWS_1252.decode(&data);
@@ -333,7 +348,7 @@ impl Parser {
             Ok(decoded.to_string())
         }
     }
-    
+
     /// Parse input string (for text content)
     fn parse(&self, input: String) -> Result<String, Error> {
         if input.is_empty() {
@@ -342,7 +357,7 @@ impl Parser {
                 "Input cannot be empty",
             ));
         }
-        
+
         // For string input, just return cleaned text
         // If strict mode is on, append indicator for testing
         if self.config.strict_mode {
@@ -351,17 +366,21 @@ impl Parser {
             Ok(input.trim().to_string())
         }
     }
-    
+
     /// Parse a file
     fn parse_file(&self, path: String) -> Result<String, Error> {
         use std::fs;
-        
-        let data = fs::read(&path)
-            .map_err(|e| Error::new(magnus::exception::io_error(), format!("Failed to read file: {}", e)))?;
-        
+
+        let data = fs::read(&path).map_err(|e| {
+            Error::new(
+                magnus::exception::io_error(),
+                format!("Failed to read file: {}", e),
+            )
+        })?;
+
         self.parse_bytes_internal(data, Some(&path))
     }
-    
+
     /// Parse bytes from Ruby
     fn parse_bytes(&self, data: Vec<u8>) -> Result<String, Error> {
         if data.is_empty() {
@@ -370,10 +389,10 @@ impl Parser {
                 "Data cannot be empty",
             ));
         }
-        
+
         self.parse_bytes_internal(data, None)
     }
-    
+
     /// Get parser configuration
     fn config(&self) -> Result<RHash, Error> {
         let ruby = Ruby::get().unwrap();
@@ -384,12 +403,12 @@ impl Parser {
         hash.aset(ruby.to_symbol("max_size"), self.config.max_size)?;
         Ok(hash)
     }
-    
+
     /// Check if parser is in strict mode
     fn strict_mode(&self) -> bool {
         self.config.strict_mode
     }
-    
+
     /// Check supported file types
     fn supported_formats() -> Vec<String> {
         vec![
@@ -397,6 +416,8 @@ impl Parser {
             "json".to_string(),
             "xml".to_string(),
             "html".to_string(),
+            "htm".to_string(), // HTML files (alternative extension)
+            "md".to_string(),  // Markdown files
             "docx".to_string(),
             "xlsx".to_string(),
             "xls".to_string(),
@@ -409,12 +430,12 @@ impl Parser {
             "bmp".to_string(),  // OCR via Tesseract
         ]
     }
-    
+
     /// Detect if file extension is supported
     fn supports_file(&self, path: String) -> bool {
         if let Some(ext) = std::path::Path::new(&path)
             .extension()
-            .and_then(|s| s.to_str()) 
+            .and_then(|s| s.to_str())
         {
             Self::supported_formats().contains(&ext.to_lowercase())
         } else {
@@ -442,7 +463,7 @@ fn parse_bytes_direct(data: Vec<u8>) -> Result<String, Error> {
 /// Initialize the Parser class
 pub fn init(_ruby: &Ruby, module: RModule) -> Result<(), Error> {
     let class = module.define_class("Parser", class::object())?;
-    
+
     // Instance methods
     class.define_singleton_method("new", function!(Parser::new, -1))?;
     class.define_method("parse", method!(Parser::parse, 1))?;
@@ -451,7 +472,7 @@ pub fn init(_ruby: &Ruby, module: RModule) -> Result<(), Error> {
     class.define_method("config", method!(Parser::config, 0))?;
     class.define_method("strict_mode?", method!(Parser::strict_mode, 0))?;
     class.define_method("supports_file?", method!(Parser::supports_file, 1))?;
-    
+
     // Individual parser methods exposed to Ruby
     class.define_method("parse_pdf", method!(Parser::parse_pdf, 1))?;
     class.define_method("parse_docx", method!(Parser::parse_docx, 1))?;
@@ -460,13 +481,13 @@ pub fn init(_ruby: &Ruby, module: RModule) -> Result<(), Error> {
     class.define_method("parse_xml", method!(Parser::parse_xml, 1))?;
     class.define_method("parse_text", method!(Parser::parse_text, 1))?;
     class.define_method("ocr_image", method!(Parser::ocr_image, 1))?;
-    
+
     // Class methods
     class.define_singleton_method("supported_formats", function!(Parser::supported_formats, 0))?;
-    
+
     // Module-level convenience methods
     module.define_singleton_method("parse_file", function!(parse_file_direct, 1))?;
     module.define_singleton_method("parse_bytes", function!(parse_bytes_direct, 1))?;
-    
+
     Ok(())
 }

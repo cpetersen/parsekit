@@ -51,15 +51,16 @@ RSpec.describe ParseKit::Parser do
 
   describe "#parse_file" do
     let(:parser) { described_class.new }
-    let(:test_file) { "spec/fixtures/parser_test.txt" }
+    require 'tmpdir'
+let(:temp_dir) { Dir.mktmpdir }
+let(:test_file) { File.join(temp_dir, "parser_test.txt") }
 
     before do
-      FileUtils.mkdir_p("spec/fixtures")
       File.write(test_file, "File content for parsing")
     end
 
     after do
-      FileUtils.rm_f(test_file) if File.exist?(test_file)
+      FileUtils.rm_rf(temp_dir) if Dir.exist?(temp_dir)
     end
 
     it "parses file content" do
@@ -148,15 +149,16 @@ RSpec.describe ParseKit::Parser do
 
   describe "#parse_file_with_block" do
     let(:parser) { described_class.new }
-    let(:test_file) { "spec/fixtures/test.txt" }
+    require 'tmpdir'
+let(:temp_dir) { Dir.mktmpdir }
+let(:test_file) { File.join(temp_dir, "test.txt") }
 
     before do
-      FileUtils.mkdir_p("spec/fixtures")
       File.write(test_file, "test content")
     end
 
     after do
-      FileUtils.rm_f(test_file) if File.exist?(test_file)
+      FileUtils.rm_rf(temp_dir) if Dir.exist?(temp_dir)
     end
 
     it "yields the parsed file content to the block" do
@@ -180,15 +182,16 @@ RSpec.describe ParseKit::Parser do
     let(:parser) { described_class.new }
 
     context "with an existing supported file" do
-      let(:test_file) { "spec/fixtures/test.txt" }
+      require 'tmpdir'
+let(:temp_dir) { Dir.mktmpdir }
+let(:test_file) { File.join(temp_dir, "test.txt") }
 
       before do
-        FileUtils.mkdir_p("spec/fixtures")
         File.write(test_file, "content")
       end
 
       after do
-        FileUtils.rm_f(test_file) if File.exist?(test_file)
+        FileUtils.rm_rf(temp_dir) if Dir.exist?(temp_dir)
       end
 
       it "returns true for existing supported file" do
@@ -201,15 +204,16 @@ RSpec.describe ParseKit::Parser do
     end
 
     context "with an unsupported file" do
-      let(:test_file) { "spec/fixtures/test.xyz" }
+      require 'tmpdir'
+let(:temp_dir) { Dir.mktmpdir }
+let(:test_file) { File.join(temp_dir, "test.xyz") }
 
       before do
-        FileUtils.mkdir_p("spec/fixtures")
         File.write(test_file, "content")
       end
 
       after do
-        FileUtils.rm_f(test_file) if File.exist?(test_file)
+        FileUtils.rm_rf(temp_dir) if Dir.exist?(temp_dir)
       end
 
       it "returns false for unsupported file type" do
@@ -417,15 +421,16 @@ RSpec.describe ParseKit::Parser do
 
   describe "#parse_file_routed" do
     let(:parser) { described_class.new }
-    let(:test_file) { "spec/fixtures/test.json" }
+    require 'tmpdir'
+let(:temp_dir) { Dir.mktmpdir }
+let(:test_file) { File.join(temp_dir, "test.json") }
 
     before do
-      FileUtils.mkdir_p("spec/fixtures")
       File.write(test_file, '{"test": "data"}')
     end
 
     after do
-      FileUtils.rm_f(test_file) if File.exist?(test_file)
+      FileUtils.rm_rf(temp_dir) if Dir.exist?(temp_dir)
     end
 
     it "routes to the correct parser based on extension" do
