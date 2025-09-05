@@ -28,15 +28,16 @@ RSpec.describe ParseKit do
   end
 
   describe ".parse_file" do
-    let(:test_file) { "spec/fixtures/test.txt" }
+    require 'tmpdir'
+let(:temp_dir) { Dir.mktmpdir }
+let(:test_file) { File.join(temp_dir, "test.txt") }
 
     before do
-      FileUtils.mkdir_p("spec/fixtures")
       File.write(test_file, "test file content")
     end
 
     after do
-      FileUtils.rm_f(test_file) if File.exist?(test_file)
+      FileUtils.rm_rf(temp_dir) if Dir.exist?(temp_dir)
     end
 
     it "parses a file" do
@@ -106,6 +107,129 @@ RSpec.describe ParseKit do
       version = described_class.native_version
       expect(version).to be_a(String)
       expect(version).not_to eq("unknown")
+    end
+  end
+
+  describe "markdown file parsing" do
+    let(:md_file) { "spec/fixtures/sample.md" }
+
+
+
+    it "parses markdown files" do
+      result = described_class.parse_file(md_file)
+      expect(result).to be_a(String)
+      expect(result).not_to be_empty
+    end
+
+    it "extracts text content from markdown" do
+      result = described_class.parse_file(md_file)
+      # Note: parsekit currently treats .md files as plain text, so markdown formatting is preserved
+      expect(result).to include("Markdown document for testing")
+      expect(result).to include("**Bold text**")
+      expect(result).to include("*Italic text*")
+    end
+
+    it "handles Unicode content" do
+      result = described_class.parse_file(md_file)
+      expect(result).to include("Hello 世界 🌍")
+    end
+
+    it "processes markdown tables as plain text" do
+      result = described_class.parse_file(md_file)
+      expect(result).to include("Header 1")
+      expect(result).to include("Header 2")
+      expect(result).to include("Row 1")
+      # Note: The actual content has "Row 1" twice in the test data
+    end
+
+    it "includes bullet points" do
+      result = described_class.parse_file(md_file)
+      expect(result).to include("Bullet points")
+    end
+  end
+
+  describe "HTML file parsing" do
+    let(:html_file) { "spec/fixtures/sample.html" }
+
+
+
+    it "parses HTML files" do
+      result = described_class.parse_file(html_file)
+      expect(result).to be_a(String)
+      expect(result).not_to be_empty
+    end
+
+    it "extracts text content from HTML" do
+      result = described_class.parse_file(html_file)
+      expect(result).to include("Welcome to the HTML Document")
+      expect(result).to include("HTML document for testing")
+      expect(result).to include("Bold text")
+      expect(result).to include("Italic text")
+    end
+
+    it "handles HTML table content" do
+      result = described_class.parse_file(html_file)
+      expect(result).to include("Header 1")
+      expect(result).to include("Header 2")
+      expect(result).to include("Row 1")
+      expect(result).to include("Row 2")
+      expect(result).to include("Data 1")
+      expect(result).to include("Data 2")
+    end
+
+    it "processes HTML lists" do
+      result = described_class.parse_file(html_file)
+      expect(result).to include("Bullet points")
+    end
+
+    it "handles Unicode content" do
+      result = described_class.parse_file(html_file)
+      expect(result).to include("Hello 世界 🌍")
+    end
+
+    it "processes links" do
+      result = described_class.parse_file(html_file)
+      expect(result).to include("Link")
+    end
+
+    it "extracts page title" do
+      result = described_class.parse_file(html_file)
+      expect(result).to include("Sample HTML Document")
+    end
+
+    it "should not include HTML tags in output" do
+      result = described_class.parse_file(html_file)
+      expect(result).not_to include("<html>")
+      expect(result).not_to include("<head>")
+      expect(result).not_to include("<body>")
+      expect(result).not_to include("<h1>")
+      expect(result).not_to include("<p>")
+      expect(result).not_to include("<strong>")
+      expect(result).not_to include("<em>")
+    end
+  end
+
+  describe "file type detection" do
+    it "correctly identifies markdown files" do
+      expect(described_class.supports_file?("document.md")).to be true
+      expect(described_class.supports_file?("README.MD")).to be true
+    end
+
+    it "correctly identifies HTML files" do
+      expect(described_class.supports_file?("page.html")).to be true
+      expect(described_class.supports_file?("index.HTM")).to be true
+    end
+
+    it "correctly handles HTM files" do
+      htm_result = described_class.parse_file("spec/fixtures/sample.htm")
+
+      # HTM files should be parseable and return content
+      expect(htm_result).to be_a(String)
+      expect(htm_result).not_to be_empty
+      expect(htm_result).to include("Welcome to the HTML Document")
+
+      # Note: HTM might be detected as text format, so it could preserve HTML tags
+      # This test verifies the file is readable and contains expected content
     end
   end
 
