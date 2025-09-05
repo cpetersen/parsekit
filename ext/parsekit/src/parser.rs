@@ -127,75 +127,41 @@ impl Parser {
 
     /// Perform OCR on image data using Tesseract
     fn ocr_image(&self, data: Vec<u8>) -> Result<String, Error> {
-        // For testing, we'll try both implementations
-        #[cfg(feature = "bundled-tesseract")]
-        {
-            self.ocr_image_bundled(data)
-        }
-        
-        #[cfg(not(feature = "bundled-tesseract"))]
-        {
-            self.ocr_image_system(data)
-        }
-    }
-    
-    /// OCR using system tesseract (rusty-tesseract)
-    fn ocr_image_system(&self, data: Vec<u8>) -> Result<String, Error> {
-        use rusty_tesseract::{Args, Image};
-
-        // Load image from memory
-        let img = match image::load_from_memory(&data) {
-            Ok(img) => img,
-            Err(e) => {
-                return Err(Error::new(
-                    magnus::exception::runtime_error(),
-                    format!("Failed to load image: {}", e),
-                ))
-            }
-        };
-
-        // Create rusty_tesseract Image from DynamicImage
-        let tess_img = match Image::from_dynamic_image(&img) {
-            Ok(img) => img,
-            Err(e) => {
-                return Err(Error::new(
-                    magnus::exception::runtime_error(),
-                    format!("Failed to convert image for OCR: {}", e),
-                ))
-            }
-        };
-
-        // Set up OCR arguments
-        let mut args = Args::default();
-        args.lang = "eng".to_string();
-        // Optional: Add more configuration
-        // args.config_variables.insert("tessedit_char_whitelist".to_string(),
-        //     "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .,!?-".to_string());
-
-        // Perform OCR
-        match rusty_tesseract::image_to_string(&tess_img, &args) {
-            Ok(text) => Ok(text.trim().to_string()),
-            Err(e) => Err(Error::new(
-                magnus::exception::runtime_error(),
-                format!("Failed to perform OCR: {}", e),
-            )),
-        }
-    }
-    
-    /// OCR using bundled tesseract (tesseract-rs)
-    #[cfg(feature = "bundled-tesseract")]
-    fn ocr_image_bundled(&self, data: Vec<u8>) -> Result<String, Error> {
         use tesseract_rs::TesseractAPI;
         
-        // Create tesseract instance with bundled libraries
+        // Create tesseract instance
         let tesseract = TesseractAPI::new();
         
-        // Initialize with English language
-        // For bundled mode, we can use "." as the tessdata directory
-        if let Err(e) = tesseract.init(".", "eng") {
+        // Try to initialize with appropriate tessdata path
+        #[cfg(feature = "bundled-tesseract")]
+        let init_result = tesseract.init(".", "eng");
+        
+        #[cfg(not(feature = "bundled-tesseract"))]
+        let init_result = {
+            // Try common system tessdata paths
+            let tessdata_paths = vec![
+                "/usr/share/tessdata",
+                "/usr/local/share/tessdata", 
+                "/opt/homebrew/share/tessdata",
+                "/opt/local/share/tessdata",
+            ];
+            
+            let mut result = Err(tesseract_rs::TesseractError::InitError);
+            for path in &tessdata_paths {
+                if std::path::Path::new(path).exists() {
+                    if tesseract.init(path, "eng").is_ok() {
+                        result = Ok(());
+                        break;
+                    }
+                }
+            }
+            result
+        };
+        
+        if let Err(e) = init_result {
             return Err(Error::new(
                 magnus::exception::runtime_error(),
-                format!("Failed to initialize Tesseract: {}", e),
+                format!("Failed to initialize Tesseract: {:?}", e),
             ))
         }
         
@@ -232,10 +198,11 @@ impl Parser {
             Ok(text) => Ok(text.trim().to_string()),
             Err(e) => Err(Error::new(
                 magnus::exception::runtime_error(),
-                format!("Failed to perform bundled OCR: {}", e),
+                format!("Failed to perform OCR: {}", e),
             )),
         }
     }
+    
 
     /// Parse PDF files using MuPDF (statically linked) - exposed to Ruby
     fn parse_pdf(&self, data: Vec<u8>) -> Result<String, Error> {

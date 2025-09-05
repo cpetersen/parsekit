@@ -15,8 +15,7 @@ magnus = { version = "0.7", features = ["rb-sys"] }
 # Document parsing - testing embedded C libraries
 # MuPDF builds from source and statically links
 mupdf = { version = "0.5", default-features = false, features = [] }
-# OCR - Testing both wrapper and bundled versions
-rusty-tesseract = "1.1"  # Tesseract wrapper with image loading
+# OCR - Using tesseract-rs for both system and bundled modes
 tesseract-rs = "0.1"  # Tesseract with optional bundling
 image = "0.25"  # Image processing library (match rusty-tesseract's version)
 calamine = "0.26"  # Excel parsing
