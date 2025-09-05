@@ -127,39 +127,105 @@ impl Parser {
 
     /// Perform OCR on image data using Tesseract
     fn ocr_image(&self, data: Vec<u8>) -> Result<String, Error> {
-        use rusty_tesseract::{Args, Image};
-
-        // Load image from memory
+        use tesseract_rs::TesseractAPI;
+        
+        // Create tesseract instance
+        let tesseract = TesseractAPI::new();
+        
+        // Try to initialize with appropriate tessdata path
+        // Even in bundled mode, we need to find tessdata files
+        #[cfg(feature = "bundled-tesseract")]
+        let init_result = {
+            // Build list of tessdata paths to try
+            let mut tessdata_paths = Vec::new();
+            
+            // Check TESSDATA_PREFIX environment variable first (for CI)
+            if let Ok(env_path) = std::env::var("TESSDATA_PREFIX") {
+                tessdata_paths.push(env_path);
+            }
+            
+            // Add common system paths
+            tessdata_paths.extend_from_slice(&[
+                "/usr/share/tessdata".to_string(),
+                "/usr/local/share/tessdata".to_string(), 
+                "/opt/homebrew/share/tessdata".to_string(),
+                "/opt/local/share/tessdata".to_string(),
+                "tessdata".to_string(),  // Local tessdata directory
+                ".".to_string(),  // Current directory as fallback
+            ]);
+            
+            let mut result = Err(tesseract_rs::TesseractError::InitError);
+            for path in &tessdata_paths {
+                // Check if path exists first to avoid noisy error messages
+                if std::path::Path::new(path).exists() {
+                    if tesseract.init(path.as_str(), "eng").is_ok() {
+                        result = Ok(());
+                        break;
+                    }
+                }
+            }
+            result
+        };
+        
+        #[cfg(not(feature = "bundled-tesseract"))]
+        let init_result = {
+            // Try common system tessdata paths
+            let tessdata_paths = vec![
+                "/usr/share/tessdata",
+                "/usr/local/share/tessdata", 
+                "/opt/homebrew/share/tessdata",
+                "/opt/local/share/tessdata",
+            ];
+            
+            let mut result = Err(tesseract_rs::TesseractError::InitError);
+            for path in &tessdata_paths {
+                if std::path::Path::new(path).exists() {
+                    if tesseract.init(path, "eng").is_ok() {
+                        result = Ok(());
+                        break;
+                    }
+                }
+            }
+            result
+        };
+        
+        if let Err(e) = init_result {
+            return Err(Error::new(
+                magnus::exception::runtime_error(),
+                format!("Failed to initialize Tesseract: {:?}", e),
+            ))
+        }
+        
+        // Load the image from bytes
         let img = match image::load_from_memory(&data) {
             Ok(img) => img,
-            Err(e) => {
-                return Err(Error::new(
-                    magnus::exception::runtime_error(),
-                    format!("Failed to load image: {}", e),
-                ))
-            }
+            Err(e) => return Err(Error::new(
+                magnus::exception::runtime_error(),
+                format!("Failed to load image: {}", e),
+            ))
         };
-
-        // Create rusty_tesseract Image from DynamicImage
-        let tess_img = match Image::from_dynamic_image(&img) {
-            Ok(img) => img,
-            Err(e) => {
-                return Err(Error::new(
-                    magnus::exception::runtime_error(),
-                    format!("Failed to convert image for OCR: {}", e),
-                ))
-            }
-        };
-
-        // Set up OCR arguments
-        let mut args = Args::default();
-        args.lang = "eng".to_string();
-        // Optional: Add more configuration
-        // args.config_variables.insert("tessedit_char_whitelist".to_string(),
-        //     "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .,!?-".to_string());
-
-        // Perform OCR
-        match rusty_tesseract::image_to_string(&tess_img, &args) {
+        
+        // Convert to RGBA8 format
+        let rgba_img = img.to_rgba8();
+        let (width, height) = rgba_img.dimensions();
+        let raw_data = rgba_img.into_raw();
+        
+        // Set image data
+        if let Err(e) = tesseract.set_image(
+            &raw_data,
+            width as i32,
+            height as i32,
+            4,  // bytes per pixel (RGBA)
+            (width * 4) as i32,  // bytes per line
+        ) {
+            return Err(Error::new(
+                magnus::exception::runtime_error(),
+                format!("Failed to set image: {}", e),
+            ))
+        }
+        
+        // Extract text
+        match tesseract.get_utf8_text() {
             Ok(text) => Ok(text.trim().to_string()),
             Err(e) => Err(Error::new(
                 magnus::exception::runtime_error(),
@@ -167,6 +233,7 @@ impl Parser {
             )),
         }
     }
+    
 
     /// Parse PDF files using MuPDF (statically linked) - exposed to Ruby
     fn parse_pdf(&self, data: Vec<u8>) -> Result<String, Error> {

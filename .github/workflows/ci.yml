@@ -18,9 +18,18 @@ jobs:
           ruby-version: ruby
           bundler-cache: true
 
+      - name: Download tessdata for CI
+        run: |
+          mkdir -p tessdata
+          curl -L https://github.com/tesseract-ocr/tessdata_fast/raw/main/eng.traineddata -o tessdata/eng.traineddata
+          export TESSDATA_PREFIX=$PWD/tessdata
+
       - name: Compile native extension
-        run: bundle exec rake compile
+        run: |
+          export TESSDATA_PREFIX=$PWD/tessdata
+          bundle exec rake compile
 
       - name: Run specs
         run: |
+          export TESSDATA_PREFIX=$PWD/tessdata
           bundle exec rake spec

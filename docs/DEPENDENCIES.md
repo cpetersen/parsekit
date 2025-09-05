@@ -1,94 +1,57 @@
 # System Dependencies
 
-The parsekit gem wraps the [parser-core](https://crates.io/crates/parser-core) Rust crate, which requires several system libraries for document parsing and OCR functionality.
+The parsekit gem bundles all necessary libraries, making installation simple with no system dependencies required.
 
-## Required Libraries
+## Zero Dependencies by Default
 
-### macOS
+As of version 0.2.0, ParseKit bundles:
+- **Tesseract OCR**: Statically linked, no system installation needed
+- **MuPDF**: Statically linked for PDF parsing
 
-Install using Homebrew:
+## Installation
+
+Simply install the gem:
 
 ```bash
-brew install leptonica tesseract poppler
+gem install parsekit
 ```
 
-If you encounter pkg-config issues:
+No additional system libraries are required!
+
+## For Advanced Users: System Mode
+
+If you already have Tesseract installed and want to use your system installation instead of the bundled version (for faster gem compilation during development), you can opt out of bundling:
+
+### Using System Tesseract
+
+Install system dependencies first:
+
+#### macOS
 ```bash
-brew install pkg-config
-export PKG_CONFIG_PATH="/opt/homebrew/lib/pkgconfig:$PKG_CONFIG_PATH"
+brew install tesseract
 ```
 
-### Ubuntu/Debian
-
+#### Ubuntu/Debian
 ```bash
 sudo apt-get update
-sudo apt-get install -y \
-  libleptonica-dev \
-  libtesseract-dev \
-  libpoppler-cpp-dev \
-  tesseract-ocr \
-  pkg-config
+sudo apt-get install -y libtesseract-dev tesseract-ocr
 ```
 
-### Fedora/RHEL/CentOS
+#### Fedora/RHEL/CentOS
+```bash
+sudo dnf install -y tesseract-devel tesseract
+```
+
+Then install the gem without bundled features:
 
 ```bash
-sudo dnf install -y \
-  leptonica-devel \
-  tesseract-devel \
-  poppler-cpp-devel \
-  tesseract \
-  pkg-config
+gem install parsekit -- --no-default-features
 ```
 
-### Alpine Linux
-
+For development:
 ```bash
-apk add \
-  leptonica-dev \
-  tesseract-ocr-dev \
-  poppler-dev \
-  pkgconfig
+rake compile CARGO_FEATURES=""  # Disables bundled-tesseract
 ```
-
-### Windows
-
-On Windows, you'll need to:
-
-1. Install [MSYS2](https://www.msys2.org/)
-2. In MSYS2 terminal:
-```bash
-pacman -S mingw-w64-x86_64-leptonica
-pacman -S mingw-w64-x86_64-tesseract-ocr
-pacman -S mingw-w64-x86_64-poppler
-```
-
-## Troubleshooting
-
-### pkg-config not found
-
-If you get errors about pkg-config:
-
-1. **macOS**: `brew install pkg-config`
-2. **Linux**: Install pkg-config for your distribution
-3. Set `PKG_CONFIG_PATH` to include the directory with `.pc` files
-
-### Library not found
-
-If libraries are installed but not found:
-
-```bash
-# Find where .pc files are located
-find /usr -name "lept.pc" 2>/dev/null
-find /opt -name "lept.pc" 2>/dev/null
-
-# Add to PKG_CONFIG_PATH
-export PKG_CONFIG_PATH="/path/to/pc/files:$PKG_CONFIG_PATH"
-```
-
-### Building without certain features
-
-Currently, all dependencies are required. Future versions may make OCR optional.
 
 ## Docker
 
@@ -97,20 +60,11 @@ For containerized environments, here's a sample Dockerfile:
 ```dockerfile
 FROM ruby:3.2
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-  libleptonica-dev \
-  libtesseract-dev \
-  libpoppler-cpp-dev \
-  tesseract-ocr \
-  pkg-config \
-  && rm -rf /var/lib/apt/lists/*
-
-# Install Rust
+# Install Rust (required for compilation)
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Your application setup
+# No system dependencies needed with bundled mode!
 WORKDIR /app
 COPY Gemfile* ./
 RUN bundle install
@@ -119,15 +73,33 @@ COPY . .
 
 ## CI/CD
 
-For GitHub Actions, add this step before building:
+For GitHub Actions, no additional dependencies are needed:
 
 ```yaml
-- name: Install system dependencies
+- name: Setup Ruby
+  uses: ruby/setup-ruby@v1
+  with:
+    ruby-version: ruby
+    bundler-cache: true
+
+- name: Compile and test
   run: |
-    if [ "$RUNNER_OS" == "Linux" ]; then
-      sudo apt-get update
-      sudo apt-get install -y libleptonica-dev libtesseract-dev libpoppler-cpp-dev
-    elif [ "$RUNNER_OS" == "macOS" ]; then
-      brew install leptonica tesseract poppler
-    fi
+    bundle exec rake compile
+    bundle exec rake spec
 ```
+
+## Troubleshooting
+
+### Compilation takes too long
+
+The bundled mode compiles Tesseract from source, which can take 1-3 minutes on initial installation. This is a one-time cost. If you need faster rebuilds during development, consider using system mode.
+
+### Out of memory during compilation
+
+Bundling libraries requires more memory during compilation. If you encounter OOM errors:
+1. Increase available memory
+2. Or use system mode instead
+
+### Want to use a specific Tesseract version
+
+Use system mode and install your preferred Tesseract version through your package manager.
