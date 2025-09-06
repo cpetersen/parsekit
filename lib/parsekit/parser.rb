@@ -246,16 +246,16 @@ module ParseKit
     # @param input [String] The input to validate
     # @return [Boolean] True if input is valid
     def valid_input?(input)
-      return false unless input.is_a?(String)
-      return false if input.empty?
-      true
+      input.is_a?(String) && !input.empty?
     end
     
     # Validate file before parsing
     # @param path [String] The file path to validate
     # @return [Boolean] True if file exists and format is supported
     def valid_file?(path)
+      return false if path.nil? || path.empty?
       return false unless File.exist?(path)
+      return false if File.directory?(path)
       supports_file?(path)
     end
     
@@ -264,8 +264,31 @@ module ParseKit
     # @return [String, nil] File extension in lowercase without leading dot
     def file_extension(path)
       return nil if path.nil? || path.empty?
-      ext = File.extname(path)
-      ext.empty? ? nil : ext[1..-1].downcase
+      
+      # Handle trailing whitespace
+      clean_path = path.strip
+      
+      # Handle trailing slashes (directory indicator)
+      return nil if clean_path.end_with?('/')
+      
+      # Get the extension
+      ext = File.extname(clean_path)
+      
+      # Handle special cases
+      if ext.empty?
+        # Check for hidden files like .gitignore (the whole name after dot is the "extension")
+        basename = File.basename(clean_path)
+        if basename.start_with?('.') && basename.length > 1 && !basename[1..-1].include?('.')
+          return basename[1..-1].downcase
+        end
+        return nil
+      elsif ext == '.'
+        # File ends with a dot but no extension
+        return nil
+      else
+        # Normal extension, remove the dot and downcase
+        ext[1..-1].downcase
+      end
     end
   end
 end
