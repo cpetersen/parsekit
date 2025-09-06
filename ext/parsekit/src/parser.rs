@@ -78,6 +78,7 @@ impl Parser {
         match file_type.as_str() {
             "pdf" => self.parse_pdf(data),
             "docx" => self.parse_docx(data),
+            "pptx" => self.parse_pptx(data),
             "xlsx" | "xls" => self.parse_xlsx(data),
             "json" => self.parse_json(data),
             "xml" | "html" => self.parse_xml(data),
@@ -328,6 +329,143 @@ impl Parser {
         }
     }
 
+    /// Parse PPTX (PowerPoint) files - exposed to Ruby
+    fn parse_pptx(&self, data: Vec<u8>) -> Result<String, Error> {
+        use std::io::{Cursor, Read};
+        use zip::ZipArchive;
+        
+        let cursor = Cursor::new(data);
+        let mut archive = match ZipArchive::new(cursor) {
+            Ok(archive) => archive,
+            Err(e) => {
+                return Err(Error::new(
+                    magnus::exception::runtime_error(),
+                    format!("Failed to open PPTX as ZIP: {}", e),
+                ))
+            }
+        };
+        
+        let mut all_text = Vec::new();
+        let mut slide_numbers = Vec::new();
+        
+        // First, collect slide numbers and sort them
+        for i in 0..archive.len() {
+            let file = match archive.by_index(i) {
+                Ok(file) => file,
+                Err(_) => continue,
+            };
+            
+            let name = file.name();
+            // Match slide XML files (e.g., ppt/slides/slide1.xml)
+            if name.starts_with("ppt/slides/slide") && name.ends_with(".xml") && !name.contains("_rels") {
+                // Extract slide number from filename
+                if let Some(num_str) = name
+                    .strip_prefix("ppt/slides/slide")
+                    .and_then(|s| s.strip_suffix(".xml"))
+                {
+                    if let Ok(num) = num_str.parse::<usize>() {
+                        slide_numbers.push((num, i));
+                    }
+                }
+            }
+        }
+        
+        // Sort by slide number to maintain order
+        slide_numbers.sort_by_key(|&(num, _)| num);
+        
+        // Now process slides in order
+        for (_, index) in slide_numbers {
+            let mut file = match archive.by_index(index) {
+                Ok(file) => file,
+                Err(_) => continue,
+            };
+            
+            let mut contents = String::new();
+            if file.read_to_string(&mut contents).is_ok() {
+                // Extract text from slide XML
+                let text = self.extract_text_from_slide_xml(&contents);
+                if !text.is_empty() {
+                    all_text.push(text);
+                }
+            }
+        }
+        
+        // Also extract notes if present
+        for i in 0..archive.len() {
+            let mut file = match archive.by_index(i) {
+                Ok(file) => file,
+                Err(_) => continue,
+            };
+            
+            let name = file.name();
+            // Match notes slide XML files
+            if name.starts_with("ppt/notesSlides/notesSlide") && name.ends_with(".xml") && !name.contains("_rels") {
+                let mut contents = String::new();
+                if file.read_to_string(&mut contents).is_ok() {
+                    let text = self.extract_text_from_slide_xml(&contents);
+                    if !text.is_empty() {
+                        all_text.push(format!("[Notes: {}]", text));
+                    }
+                }
+            }
+        }
+        
+        if all_text.is_empty() {
+            Ok("".to_string())
+        } else {
+            Ok(all_text.join("\n\n"))
+        }
+    }
+    
+    /// Helper method to extract text from slide XML
+    fn extract_text_from_slide_xml(&self, xml_content: &str) -> String {
+        use quick_xml::events::Event;
+        use quick_xml::Reader;
+        
+        let mut reader = Reader::from_str(xml_content);
+        
+        let mut text_parts = Vec::new();
+        let mut buf = Vec::new();
+        let mut in_text_element = false;
+        
+        loop {
+            match reader.read_event_into(&mut buf) {
+                Ok(Event::Start(ref e)) => {
+                    // Look for text elements (a:t or t)
+                    let name = e.name();
+                    let local_name_bytes = name.local_name();
+                    let local_name = std::str::from_utf8(local_name_bytes.as_ref()).unwrap_or("");
+                    if local_name == "t" {
+                        in_text_element = true;
+                    }
+                }
+                Ok(Event::Text(e)) => {
+                    if in_text_element {
+                        if let Ok(text) = e.unescape() {
+                            let text_str = text.trim();
+                            if !text_str.is_empty() {
+                                text_parts.push(text_str.to_string());
+                            }
+                        }
+                    }
+                }
+                Ok(Event::End(ref e)) => {
+                    let name = e.name();
+                    let local_name_bytes = name.local_name();
+                    let local_name = std::str::from_utf8(local_name_bytes.as_ref()).unwrap_or("");
+                    if local_name == "t" {
+                        in_text_element = false;
+                    }
+                }
+                Ok(Event::Eof) => break,
+                _ => {}
+            }
+            buf.clear();
+        }
+        
+        text_parts.join(" ")
+    }
+
     /// Parse Excel files - exposed to Ruby
     fn parse_xlsx(&self, data: Vec<u8>) -> Result<String, Error> {
         use calamine::{Reader, Xlsx};
@@ -486,6 +624,7 @@ impl Parser {
             "htm".to_string(), // HTML files (alternative extension)
             "md".to_string(),  // Markdown files
             "docx".to_string(),
+            "pptx".to_string(),
             "xlsx".to_string(),
             "xls".to_string(),
             "csv".to_string(),
@@ -543,6 +682,7 @@ pub fn init(_ruby: &Ruby, module: RModule) -> Result<(), Error> {
     // Individual parser methods exposed to Ruby
     class.define_method("parse_pdf", method!(Parser::parse_pdf, 1))?;
     class.define_method("parse_docx", method!(Parser::parse_docx, 1))?;
+    class.define_method("parse_pptx", method!(Parser::parse_pptx, 1))?;
     class.define_method("parse_xlsx", method!(Parser::parse_xlsx, 1))?;
     class.define_method("parse_json", method!(Parser::parse_json, 1))?;
     class.define_method("parse_xml", method!(Parser::parse_xml, 1))?;
