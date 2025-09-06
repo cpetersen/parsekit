@@ -89,6 +89,7 @@ module ParseKit
       
       case ext.downcase
       when 'docx' then :docx
+      when 'pptx' then :pptx
       when 'xlsx', 'xls' then :xlsx
       when 'pdf' then :pdf
       when 'json' then :json

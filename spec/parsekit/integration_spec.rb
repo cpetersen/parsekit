@@ -102,10 +102,17 @@ RSpec.describe "ParseKit Integration" do
 
         result = parser.parse_file(pptx_file)
         expect(result).to be_a(String)
-        # PPTX parsing appears to be broken - returns binary data
-        # This needs to be fixed in the parser implementation
-        # For now, we just check it returns a string
-        # TODO: Fix PPTX parsing and add proper content assertions
+        expect(result).not_to be_empty
+        
+        # Check for content we know is in the sample PPTX
+        expect(result).to include("Microsoft Powerpoint document")
+        expect(result).to include("Bullet points")
+        expect(result).to include("Bold text")
+        expect(result).to include("Italic text")
+        expect(result).to include("Unicode")
+        expect(result).to include("Table example")
+        expect(result).to include("Column 1")
+        expect(result).to include("Data A")
       end
     end
   end

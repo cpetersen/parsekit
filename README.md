@@ -121,20 +121,11 @@ excel_text = parser.parse_xlsx(excel_data)
 | PDF | .pdf | `parse_pdf` | Text extraction via MuPDF |
 | Word | .docx | `parse_docx` | Office Open XML format |
 | Excel | .xlsx, .xls | `parse_xlsx` | Both modern and legacy formats |
-| PowerPoint | .pptx | - | **Not yet supported** - see [implementation plan](docs/PPTX_PLAN.md) |
+| PowerPoint | .pptx | `parse_pptx` | Text extraction from slides and notes |
 | Images | .png, .jpg, .jpeg, .tiff, .bmp | `ocr_image` | OCR via bundled Tesseract |
 | JSON | .json | `parse_json` | Pretty-printed output |
 | XML/HTML | .xml, .html | `parse_xml` | Extracts text content |
 | Text | .txt, .csv, .md | `parse_text` | With encoding detection |
-
-### Note on PowerPoint Support
-
-While PPTX files are listed in our features, they are not yet fully implemented. Currently, PPTX files will return binary data instead of extracted text. We have a detailed [implementation plan](docs/PPTX_PLAN.md) for adding proper PPTX support in a future release. This will involve:
-- Adding ZIP archive handling capabilities
-- Implementing XML extraction from PowerPoint slide files
-- Following the same Office Open XML approach used for DOCX files
-
-For now, if you need to extract text from PowerPoint files, we recommend converting them to PDF first.
 
 ## Performance
 
