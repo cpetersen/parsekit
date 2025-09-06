@@ -18,6 +18,34 @@ Rake::ExtensionTask.new("parsekit", spec) do |ext|
   ext.cross_platform = %w[x86_64-linux arm64-darwin x86_64-darwin aarch64-linux]
 end
 
+# Work around rake-compiler trying to stage non-existent build artifacts
+# This happens when dependencies generate files during their build process
+# Create dummy files for the ones that cause errors to satisfy rake-compiler
+task :before_compile do
+  # Common build artifacts that rake-compiler tries to copy but don't exist after clean
+  problem_files = [
+    "ext/parsekit/target/release/build/clang-sys-*/out/common.rs",
+    "ext/parsekit/target/release/build/mupdf-sys-*/out/bindings.rs",
+    "ext/parsekit/target/release/build/rb-sys-*/out/*.rs",
+    "ext/parsekit/target/release/build/typenum-*/out/*.rs",
+    "ext/parsekit/target/release/build/rav1e-*/out/*.rs"
+  ]
+  
+  problem_files.each do |pattern|
+    Dir.glob(pattern).each do |file|
+      # These files will be regenerated during the actual build
+      # We just need them to exist to prevent rake errors
+      unless File.exist?(file)
+        FileUtils.mkdir_p(File.dirname(file))
+        FileUtils.touch(file)
+      end
+    end
+  end
+end
+
+# Ensure our workaround runs before compilation
+task compile: :before_compile
+
 # Default task runs compile then tests
 task default: [:compile, :spec]
 

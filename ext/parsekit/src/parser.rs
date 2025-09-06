@@ -28,6 +28,33 @@ impl Default for ParserConfig {
     }
 }
 
+// Error handling helpers
+impl Parser {
+    /// Create a RuntimeError with formatted message
+    fn runtime_error<E: std::fmt::Display>(context: &str, err: E) -> Error {
+        Error::new(
+            Ruby::get().unwrap().exception_runtime_error(),
+            format!("{}: {}", context, err),
+        )
+    }
+    
+    /// Create an ArgumentError with message
+    fn argument_error(msg: &str) -> Error {
+        Error::new(
+            Ruby::get().unwrap().exception_arg_error(),
+            msg.to_string(),
+        )
+    }
+    
+    /// Create an IOError with formatted message
+    fn io_error<E: std::fmt::Display>(context: &str, err: E) -> Error {
+        Error::new(
+            Ruby::get().unwrap().exception_io_error(),
+            format!("{}: {}", context, err),
+        )
+    }
+}
+
 impl Parser {
     /// Create a new Parser instance with optional configuration
     fn new(ruby: &Ruby, args: &[Value]) -> Result<Self, Error> {
@@ -58,13 +85,10 @@ impl Parser {
     fn parse_bytes_internal(&self, data: Vec<u8>, filename: Option<&str>) -> Result<String, Error> {
         // Check size limit
         if data.len() > self.config.max_size {
-            return Err(Error::new(
-                Ruby::get().unwrap().exception_runtime_error(),
-                format!(
-                    "File size {} exceeds maximum allowed size {}",
-                    data.len(),
-                    self.config.max_size
-                ),
+            return Err(Self::runtime_error(
+                "File size exceeds limit",
+                format!("{} bytes exceeds maximum allowed size of {} bytes", 
+                    data.len(), self.config.max_size)
             ));
         }
 
@@ -170,20 +194,12 @@ impl Parser {
         };
         
         if let Err(e) = init_result {
-            return Err(Error::new(
-                Ruby::get().unwrap().exception_runtime_error(),
-                format!("Failed to initialize Tesseract: {:?}", e),
-            ))
+            return Err(Self::runtime_error("Failed to initialize Tesseract", e));
         }
         
         // Load the image from bytes
-        let img = match image::load_from_memory(&data) {
-            Ok(img) => img,
-            Err(e) => return Err(Error::new(
-                Ruby::get().unwrap().exception_runtime_error(),
-                format!("Failed to load image: {}", e),
-            ))
-        };
+        let img = image::load_from_memory(&data)
+            .map_err(|e| Self::runtime_error("Failed to load image", e))?;
         
         // Convert to RGBA8 format
         let rgba_img = img.to_rgba8();
@@ -191,27 +207,18 @@ impl Parser {
         let raw_data = rgba_img.into_raw();
         
         // Set image data
-        if let Err(e) = tesseract.set_image(
+        tesseract.set_image(
             &raw_data,
             width as i32,
             height as i32,
             4,  // bytes per pixel (RGBA)
             (width * 4) as i32,  // bytes per line
-        ) {
-            return Err(Error::new(
-                Ruby::get().unwrap().exception_runtime_error(),
-                format!("Failed to set image: {}", e),
-            ))
-        }
+        ).map_err(|e| Self::runtime_error("Failed to set image", e))?;
         
         // Extract text
-        match tesseract.get_utf8_text() {
-            Ok(text) => Ok(text.trim().to_string()),
-            Err(e) => Err(Error::new(
-                Ruby::get().unwrap().exception_runtime_error(),
-                format!("Failed to perform OCR: {}", e),
-            )),
-        }
+        tesseract.get_utf8_text()
+            .map(|text| text.trim().to_string())
+            .map_err(|e| Self::runtime_error("Failed to perform OCR", e))
     }
     
 
@@ -221,51 +228,31 @@ impl Parser {
 
         // Try to load the PDF from memory
         // The magic parameter helps MuPDF identify the file type
-        match Document::from_bytes(&data, "pdf") {
-            Ok(doc) => {
-                let mut all_text = String::new();
+        let doc = Document::from_bytes(&data, "pdf")
+            .map_err(|e| Self::runtime_error("Failed to parse PDF", e))?;
+        
+        let mut all_text = String::new();
 
-                // Get page count - this returns a Result
-                let page_count = match doc.page_count() {
-                    Ok(count) => count,
-                    Err(e) => {
-                        return Err(Error::new(
-                            Ruby::get().unwrap().exception_runtime_error(),
-                            format!("Failed to get page count: {}", e),
-                        ))
-                    }
-                };
+        // Get page count
+        let page_count = doc.page_count()
+            .map_err(|e| Self::runtime_error("Failed to get page count", e))?;
 
-                // Iterate through pages
-                for page_num in 0..page_count {
-                    match doc.load_page(page_num) {
-                        Ok(page) => {
-                            // Extract text from the page
-                            match page.to_text() {
-                                Ok(text) => {
-                                    all_text.push_str(&text);
-                                    all_text.push('\n');
-                                }
-                                Err(_) => continue,
-                            }
-                        }
-                        Err(_) => continue,
-                    }
-                }
-
-                if all_text.is_empty() {
-                    Ok(
-                        "PDF contains no extractable text (might be scanned/image-based)"
-                            .to_string(),
-                    )
-                } else {
-                    Ok(all_text.trim().to_string())
+        // Iterate through pages
+        for page_num in 0..page_count {
+            // Continue on page errors rather than failing entirely
+            if let Ok(page) = doc.load_page(page_num) {
+                // Extract text from the page
+                if let Ok(text) = page.to_text() {
+                    all_text.push_str(&text);
+                    all_text.push('\n');
                 }
             }
-            Err(e) => Err(Error::new(
-                Ruby::get().unwrap().exception_runtime_error(),
-                format!("Failed to parse PDF: {}", e),
-            )),
+        }
+
+        if all_text.is_empty() {
+            Ok("PDF contains no extractable text (might be scanned/image-based)".to_string())
+        } else {
+            Ok(all_text.trim().to_string())
         }
     }
 
@@ -301,10 +288,7 @@ impl Parser {
 
                 Ok(result.trim().to_string())
             }
-            Err(e) => Err(Error::new(
-                Ruby::get().unwrap().exception_runtime_error(),
-                format!("Failed to parse DOCX file: {}", e),
-            )),
+            Err(e) => Err(Self::runtime_error("Failed to parse DOCX file", e)),
         }
     }
 
@@ -314,15 +298,8 @@ impl Parser {
         use zip::ZipArchive;
         
         let cursor = Cursor::new(data);
-        let mut archive = match ZipArchive::new(cursor) {
-            Ok(archive) => archive,
-            Err(e) => {
-                return Err(Error::new(
-                    Ruby::get().unwrap().exception_runtime_error(),
-                    format!("Failed to open PPTX as ZIP: {}", e),
-                ))
-            }
-        };
+        let mut archive = ZipArchive::new(cursor)
+            .map_err(|e| Self::runtime_error("Failed to open PPTX as ZIP", e))?;
         
         let mut all_text = Vec::new();
         let mut slide_numbers = Vec::new();
@@ -471,10 +448,7 @@ impl Parser {
 
                 Ok(result)
             }
-            Err(e) => Err(Error::new(
-                Ruby::get().unwrap().exception_runtime_error(),
-                format!("Failed to parse Excel file: {}", e),
-            )),
+            Err(e) => Err(Self::runtime_error("Failed to parse Excel file", e)),
         }
     }
 
@@ -506,10 +480,7 @@ impl Parser {
                 }
                 Ok(Event::Eof) => break,
                 Err(e) => {
-                    return Err(Error::new(
-                        Ruby::get().unwrap().exception_runtime_error(),
-                        format!("XML parse error: {}", e),
-                    ))
+                    return Err(Self::runtime_error("XML parse error", e))
                 }
                 _ => {}
             }
@@ -536,10 +507,7 @@ impl Parser {
     /// Parse input string (for text content)
     fn parse(&self, input: String) -> Result<String, Error> {
         if input.is_empty() {
-            return Err(Error::new(
-                Ruby::get().unwrap().exception_arg_error(),
-                "Input cannot be empty",
-            ));
+            return Err(Self::argument_error("Input cannot be empty"));
         }
 
         // For string input, just return cleaned text
@@ -555,12 +523,8 @@ impl Parser {
     fn parse_file(&self, path: String) -> Result<String, Error> {
         use std::fs;
 
-        let data = fs::read(&path).map_err(|e| {
-            Error::new(
-                Ruby::get().unwrap().exception_io_error(),
-                format!("Failed to read file: {}", e),
-            )
-        })?;
+        let data = fs::read(&path)
+            .map_err(|e| Self::io_error("Failed to read file", e))?;
 
         self.parse_bytes_internal(data, Some(&path))
     }
@@ -568,10 +532,7 @@ impl Parser {
     /// Parse bytes from Ruby
     fn parse_bytes(&self, data: Vec<u8>) -> Result<String, Error> {
         if data.is_empty() {
-            return Err(Error::new(
-                Ruby::get().unwrap().exception_arg_error(),
-                "Data cannot be empty",
-            ));
+            return Err(Self::argument_error("Data cannot be empty"));
         }
 
         self.parse_bytes_internal(data, None)
