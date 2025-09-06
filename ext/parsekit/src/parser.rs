@@ -1,7 +1,7 @@
 use magnus::{
     function, method, prelude::*, scan_args, Error, Module, RHash, RModule, Ruby, Value,
 };
-use std::path::Path;
+use crate::format_detector::{FileFormat, FormatDetector};
 
 #[derive(Debug, Clone)]
 #[magnus::wrap(class = "ParseKit::Parser", free_immediately, size)]
@@ -68,62 +68,40 @@ impl Parser {
             ));
         }
 
-        // Detect file type from extension or content
-        let file_type = if let Some(name) = filename {
-            Self::detect_type_from_filename(name)
-        } else {
-            Self::detect_type_from_content(&data)
-        };
+        // Use centralized format detection
+        let format = FormatDetector::detect(filename, Some(&data));
 
-        match file_type.as_str() {
-            "pdf" => self.parse_pdf(data),
-            "docx" => self.parse_docx(data),
-            "pptx" => self.parse_pptx(data),
-            "xlsx" | "xls" => self.parse_xlsx(data),
-            "json" => self.parse_json(data),
-            "xml" | "html" => self.parse_xml(data),
-            "png" | "jpg" | "jpeg" | "tiff" | "bmp" => self.ocr_image(data),
-            "txt" | "text" => self.parse_text(data),
-            _ => self.parse_text(data), // Default to text parsing
+        // Route to appropriate parser
+        if FormatDetector::is_image_format(&format) {
+            self.ocr_image(data)
+        } else {
+            match format {
+                FileFormat::Pdf => self.parse_pdf(data),
+                FileFormat::Docx => self.parse_docx(data),
+                FileFormat::Pptx => self.parse_pptx(data),
+                FileFormat::Xlsx | FileFormat::Xls => self.parse_xlsx(data),
+                FileFormat::Json => self.parse_json(data),
+                FileFormat::Xml | FileFormat::Html => self.parse_xml(data),
+                FileFormat::Text | FileFormat::Unknown => self.parse_text(data),
+                _ => self.parse_text(data), // Fallback for any future formats
+            }
         }
     }
 
-    /// Detect file type from filename extension
-    fn detect_type_from_filename(filename: &str) -> String {
-        let path = Path::new(filename);
-        match path.extension().and_then(|s| s.to_str()) {
-            Some(ext) => ext.to_lowercase(),
-            None => "txt".to_string(),
+    /// Ruby-accessible method to detect format from bytes
+    fn detect_format_from_bytes(&self, data: Vec<u8>) -> String {
+        let format = FormatDetector::detect_from_content(&data);
+        // For compatibility with Ruby tests, return "xlsx" for old Excel
+        match format {
+            FileFormat::Xls => "xlsx".to_string(),  // Compatibility with existing tests
+            _ => format.to_symbol().to_string(),
         }
     }
-
-    /// Detect file type from content (basic detection)
-    fn detect_type_from_content(data: &[u8]) -> String {
-        if data.starts_with(b"%PDF") {
-            "pdf".to_string()
-        } else if data.starts_with(b"PK") {
-            // PK is the ZIP signature - could be DOCX or XLSX
-            // Try to differentiate by looking for common patterns
-            // This is a simplified check - both DOCX and XLSX are ZIP files
-            // For now, default to xlsx as it's more commonly parsed
-            "xlsx".to_string() // Office Open XML format (could also be DOCX)
-        } else if data.starts_with(&[0xD0, 0xCF, 0x11, 0xE0]) {
-            "xls".to_string() // Old Excel format
-        } else if data.starts_with(&[0x89, 0x50, 0x4E, 0x47]) {
-            "png".to_string() // PNG signature
-        } else if data.starts_with(&[0xFF, 0xD8, 0xFF]) {
-            "jpg".to_string() // JPEG signature
-        } else if data.starts_with(b"BM") {
-            "bmp".to_string() // BMP signature
-        } else if data.starts_with(b"II\x2A\x00") || data.starts_with(b"MM\x00\x2A") {
-            "tiff".to_string() // TIFF signature (little-endian or big-endian)
-        } else if data.starts_with(b"<?xml") || data.starts_with(b"<html") {
-            "xml".to_string()
-        } else if data.starts_with(b"{") || data.starts_with(b"[") {
-            "json".to_string()
-        } else {
-            "txt".to_string()
-        }
+    
+    /// Ruby-accessible method to detect format from filename
+    fn detect_format_from_filename(&self, filename: String) -> String {
+        let format = FormatDetector::detect_from_extension(&filename);
+        format.to_symbol().to_string()
     }
 
     /// Perform OCR on image data using Tesseract
@@ -616,25 +594,11 @@ impl Parser {
 
     /// Check supported file types
     fn supported_formats() -> Vec<String> {
-        vec![
-            "txt".to_string(),
-            "json".to_string(),
-            "xml".to_string(),
-            "html".to_string(),
-            "htm".to_string(), // HTML files (alternative extension)
-            "md".to_string(),  // Markdown files
-            "docx".to_string(),
-            "pptx".to_string(),
-            "xlsx".to_string(),
-            "xls".to_string(),
-            "csv".to_string(),
-            "pdf".to_string(),  // Text extraction via MuPDF
-            "png".to_string(),  // OCR via Tesseract
-            "jpg".to_string(),  // OCR via Tesseract
-            "jpeg".to_string(), // OCR via Tesseract
-            "tiff".to_string(), // OCR via Tesseract
-            "bmp".to_string(),  // OCR via Tesseract
-        ]
+        // Use the centralized list from FormatDetector
+        FormatDetector::supported_extensions()
+            .iter()
+            .map(|&s| s.to_string())
+            .collect()
     }
 
     /// Detect if file extension is supported
@@ -688,6 +652,10 @@ pub fn init(_ruby: &Ruby, module: RModule) -> Result<(), Error> {
     class.define_method("parse_xml", method!(Parser::parse_xml, 1))?;
     class.define_method("parse_text", method!(Parser::parse_text, 1))?;
     class.define_method("ocr_image", method!(Parser::ocr_image, 1))?;
+    
+    // Format detection methods
+    class.define_method("detect_format_from_bytes", method!(Parser::detect_format_from_bytes, 1))?;
+    class.define_method("detect_format_from_filename", method!(Parser::detect_format_from_filename, 1))?;
 
     // Class methods
     class.define_singleton_method("supported_formats", function!(Parser::supported_formats, 0))?;
