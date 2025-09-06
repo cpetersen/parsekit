@@ -3,65 +3,24 @@
 module ParseKit
   # Ruby wrapper for the native Parser class
   #
-  # The Ruby layer now handles format detection and routing to specific parsers,
-  # while Rust provides the actual parsing implementations.
+  # This class provides document parsing capabilities through a native Rust extension.
+  # For documentation of native methods, see NATIVE_API.md
+  #
+  # The Ruby layer provides convenience methods and helpers while the Rust
+  # extension handles the actual parsing of PDF, Office documents, images (OCR), etc.
   class Parser
-    # These methods are implemented in the native extension
-    # and are documented here for YARD
+    # Native methods implemented in Rust:
+    # - initialize(options = {})
+    # - parse(input)
+    # - parse_file(path)
+    # - parse_bytes(data)
+    # - config
+    # - supports_file?(path)
+    # - strict_mode?
+    # - parse_pdf, parse_docx, parse_xlsx, parse_pptx, parse_json, parse_xml, parse_text, ocr_image
+    # See NATIVE_API.md for detailed documentation
     
-    # Initialize a new Parser instance
-    # @param options [Hash] Configuration options
-    # @option options [String] :encoding Input encoding (default: UTF-8)
-    # def initialize(options = {})
-    #   # Implemented in native extension
-    # end
-    
-    # Parse an input string (for text content)
-    # @param input [String] The input to parse
-    # @return [String] The parsed result
-    # @raise [ArgumentError] If input is empty
-    # def parse(input)
-    #   # Implemented in native extension
-    # end
-    
-    # Parse a file (supports PDF, Office documents, text files)
-    # @param path [String] Path to the file to parse
-    # @return [String] The extracted text content
-    # @raise [IOError] If file cannot be read
-    # @raise [RuntimeError] If parsing fails
-    # def parse_file(path)
-    #   # Implemented in native extension
-    # end
-    
-    # Parse binary data
-    # @param data [Array<Integer>] Binary data as byte array
-    # @return [String] The extracted text content
-    # @raise [ArgumentError] If data is empty
-    # @raise [RuntimeError] If parsing fails
-    # def parse_bytes(data)
-    #   # Implemented in native extension
-    # end
-    
-    # Get the current configuration
-    # @return [Hash] The parser configuration
-    # def config
-    #   # Implemented in native extension
-    # end
-    
-    # Check if a file format is supported
-    # @param path [String] File path to check
-    # @return [Boolean] True if the file format is supported
-    # def supports_file?(path)
-    #   # Implemented in native extension
-    # end
-    
-    # Get list of supported file formats
-    # @return [Array<String>] List of supported file extensions
-    # def self.supported_formats
-    #   # Implemented in native extension
-    # end
-    
-    # Ruby-level helper methods
+    # Ruby convenience methods and helpers
     
     # Create a parser with strict mode enabled
     # @param options [Hash] Additional options
