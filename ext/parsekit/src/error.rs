@@ -1,4 +1,4 @@
-use magnus::{exception, Error, RModule, Ruby, Module};
+use magnus::{Error, RModule, Ruby, Module};
 
 /// Custom error types for ParseKit
 #[derive(Debug)]
@@ -15,13 +15,13 @@ impl ParserError {
     pub fn to_error(&self) -> Error {
         match self {
             ParserError::ParseError(msg) => {
-                Error::new(exception::runtime_error(), msg.clone())
+                Error::new(Ruby::get().unwrap().exception_runtime_error(), msg.clone())
             }
             ParserError::ConfigError(msg) => {
-                Error::new(exception::arg_error(), msg.clone())
+                Error::new(Ruby::get().unwrap().exception_arg_error(), msg.clone())
             }
             ParserError::IoError(msg) => {
-                Error::new(exception::io_error(), msg.clone())
+                Error::new(Ruby::get().unwrap().exception_io_error(), msg.clone())
             }
         }
     }
@@ -37,9 +37,9 @@ pub fn init(_ruby: &Ruby, module: RModule) -> Result<(), Error> {
     
     // Define error classes as regular Ruby classes
     // Users can still rescue them by name in Ruby code
-    let _error = module.define_class("Error", magnus::class::object())?;
-    let _parse_error = module.define_class("ParseError", magnus::class::object())?;
-    let _config_error = module.define_class("ConfigError", magnus::class::object())?;
+    let _error = module.define_class("Error", Ruby::get().unwrap().class_object())?;
+    let _parse_error = module.define_class("ParseError", Ruby::get().unwrap().class_object())?;
+    let _config_error = module.define_class("ConfigError", Ruby::get().unwrap().class_object())?;
     
     Ok(())
 }

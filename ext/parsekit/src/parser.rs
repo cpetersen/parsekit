@@ -1,5 +1,5 @@
 use magnus::{
-    class, function, method, prelude::*, scan_args, Error, Module, RHash, RModule, Ruby, Value,
+    function, method, prelude::*, scan_args, Error, Module, RHash, RModule, Ruby, Value,
 };
 use std::path::Path;
 
@@ -59,7 +59,7 @@ impl Parser {
         // Check size limit
         if data.len() > self.config.max_size {
             return Err(Error::new(
-                magnus::exception::runtime_error(),
+                Ruby::get().unwrap().exception_runtime_error(),
                 format!(
                     "File size {} exceeds maximum allowed size {}",
                     data.len(),
@@ -192,7 +192,7 @@ impl Parser {
         
         if let Err(e) = init_result {
             return Err(Error::new(
-                magnus::exception::runtime_error(),
+                Ruby::get().unwrap().exception_runtime_error(),
                 format!("Failed to initialize Tesseract: {:?}", e),
             ))
         }
@@ -201,7 +201,7 @@ impl Parser {
         let img = match image::load_from_memory(&data) {
             Ok(img) => img,
             Err(e) => return Err(Error::new(
-                magnus::exception::runtime_error(),
+                Ruby::get().unwrap().exception_runtime_error(),
                 format!("Failed to load image: {}", e),
             ))
         };
@@ -220,7 +220,7 @@ impl Parser {
             (width * 4) as i32,  // bytes per line
         ) {
             return Err(Error::new(
-                magnus::exception::runtime_error(),
+                Ruby::get().unwrap().exception_runtime_error(),
                 format!("Failed to set image: {}", e),
             ))
         }
@@ -229,7 +229,7 @@ impl Parser {
         match tesseract.get_utf8_text() {
             Ok(text) => Ok(text.trim().to_string()),
             Err(e) => Err(Error::new(
-                magnus::exception::runtime_error(),
+                Ruby::get().unwrap().exception_runtime_error(),
                 format!("Failed to perform OCR: {}", e),
             )),
         }
@@ -251,7 +251,7 @@ impl Parser {
                     Ok(count) => count,
                     Err(e) => {
                         return Err(Error::new(
-                            magnus::exception::runtime_error(),
+                            Ruby::get().unwrap().exception_runtime_error(),
                             format!("Failed to get page count: {}", e),
                         ))
                     }
@@ -284,7 +284,7 @@ impl Parser {
                 }
             }
             Err(e) => Err(Error::new(
-                magnus::exception::runtime_error(),
+                Ruby::get().unwrap().exception_runtime_error(),
                 format!("Failed to parse PDF: {}", e),
             )),
         }
@@ -323,7 +323,7 @@ impl Parser {
                 Ok(result.trim().to_string())
             }
             Err(e) => Err(Error::new(
-                magnus::exception::runtime_error(),
+                Ruby::get().unwrap().exception_runtime_error(),
                 format!("Failed to parse DOCX file: {}", e),
             )),
         }
@@ -339,7 +339,7 @@ impl Parser {
             Ok(archive) => archive,
             Err(e) => {
                 return Err(Error::new(
-                    magnus::exception::runtime_error(),
+                    Ruby::get().unwrap().exception_runtime_error(),
                     format!("Failed to open PPTX as ZIP: {}", e),
                 ))
             }
@@ -441,7 +441,7 @@ impl Parser {
                 }
                 Ok(Event::Text(e)) => {
                     if in_text_element {
-                        if let Ok(text) = e.unescape() {
+                        if let Ok(text) = e.decode() {
                             let text_str = text.trim();
                             if !text_str.is_empty() {
                                 text_parts.push(text_str.to_string());
@@ -493,7 +493,7 @@ impl Parser {
                 Ok(result)
             }
             Err(e) => Err(Error::new(
-                magnus::exception::runtime_error(),
+                Ruby::get().unwrap().exception_runtime_error(),
                 format!("Failed to parse Excel file: {}", e),
             )),
         }
@@ -522,13 +522,13 @@ impl Parser {
         loop {
             match reader.read_event_into(&mut buf) {
                 Ok(Event::Text(e)) => {
-                    txt.push_str(&e.unescape().unwrap_or_default());
+                    txt.push_str(&e.decode().unwrap_or_default());
                     txt.push(' ');
                 }
                 Ok(Event::Eof) => break,
                 Err(e) => {
                     return Err(Error::new(
-                        magnus::exception::runtime_error(),
+                        Ruby::get().unwrap().exception_runtime_error(),
                         format!("XML parse error: {}", e),
                     ))
                 }
@@ -558,7 +558,7 @@ impl Parser {
     fn parse(&self, input: String) -> Result<String, Error> {
         if input.is_empty() {
             return Err(Error::new(
-                magnus::exception::arg_error(),
+                Ruby::get().unwrap().exception_arg_error(),
                 "Input cannot be empty",
             ));
         }
@@ -578,7 +578,7 @@ impl Parser {
 
         let data = fs::read(&path).map_err(|e| {
             Error::new(
-                magnus::exception::io_error(),
+                Ruby::get().unwrap().exception_io_error(),
                 format!("Failed to read file: {}", e),
             )
         })?;
@@ -590,7 +590,7 @@ impl Parser {
     fn parse_bytes(&self, data: Vec<u8>) -> Result<String, Error> {
         if data.is_empty() {
             return Err(Error::new(
-                magnus::exception::arg_error(),
+                Ruby::get().unwrap().exception_arg_error(),
                 "Data cannot be empty",
             ));
         }
@@ -668,7 +668,7 @@ fn parse_bytes_direct(data: Vec<u8>) -> Result<String, Error> {
 
 /// Initialize the Parser class
 pub fn init(_ruby: &Ruby, module: RModule) -> Result<(), Error> {
-    let class = module.define_class("Parser", class::object())?;
+    let class = module.define_class("Parser", Ruby::get().unwrap().class_object())?;
 
     // Instance methods
     class.define_singleton_method("new", function!(Parser::new, -1))?;
