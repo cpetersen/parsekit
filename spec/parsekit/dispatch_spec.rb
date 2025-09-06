@@ -336,18 +336,17 @@ RSpec.describe "Dispatch and Routing" do
 
     describe "#parse_bytes_routed" do
       it "routes based on content detection" do
+        # Test with actual parseable content since routing now goes through native implementation
         test_cases = {
-          "%PDF-1.5" => :parse_pdf,
-          '{"test": true}' => :parse_json,
-          '<?xml version="1.0"?>' => :parse_xml,
-          '<!DOCTYPE html>' => :parse_xml,
-          'Plain text' => :parse_text
+          '{"test": true}' => '"test"',
+          '<?xml version="1.0"?><root>content</root>' => 'content',
+          '<!DOCTYPE html><html><body>text</body></html>' => 'text',
+          'Plain text' => 'Plain text'
         }
 
-        test_cases.each do |content, expected_method|
-          expect(parser).to receive(expected_method).and_return("parsed")
+        test_cases.each do |content, expected|
           result = parser.parse_bytes_routed(content)
-          expect(result).to eq("parsed")
+          expect(result).to include(expected)
         end
       end
     end

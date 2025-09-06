@@ -70,21 +70,22 @@ impl Parser {
 
         // Use centralized format detection
         let format = FormatDetector::detect(filename, Some(&data));
-
-        // Route to appropriate parser
-        if FormatDetector::is_image_format(&format) {
-            self.ocr_image(data)
-        } else {
-            match format {
-                FileFormat::Pdf => self.parse_pdf(data),
-                FileFormat::Docx => self.parse_docx(data),
-                FileFormat::Pptx => self.parse_pptx(data),
-                FileFormat::Xlsx | FileFormat::Xls => self.parse_xlsx(data),
-                FileFormat::Json => self.parse_json(data),
-                FileFormat::Xml | FileFormat::Html => self.parse_xml(data),
-                FileFormat::Text | FileFormat::Unknown => self.parse_text(data),
-                _ => self.parse_text(data), // Fallback for any future formats
-            }
+        
+        // Use centralized dispatch
+        self.dispatch_to_parser(format, data)
+    }
+    
+    /// Centralized dispatch logic - routes format to appropriate parser
+    fn dispatch_to_parser(&self, format: FileFormat, data: Vec<u8>) -> Result<String, Error> {
+        match format {
+            FileFormat::Pdf => self.parse_pdf(data),
+            FileFormat::Docx => self.parse_docx(data),
+            FileFormat::Pptx => self.parse_pptx(data),
+            FileFormat::Xlsx | FileFormat::Xls => self.parse_xlsx(data),
+            FileFormat::Json => self.parse_json(data),
+            FileFormat::Xml | FileFormat::Html => self.parse_xml(data),
+            FileFormat::Png | FileFormat::Jpeg | FileFormat::Tiff | FileFormat::Bmp => self.ocr_image(data),
+            FileFormat::Text | FileFormat::Unknown => self.parse_text(data),
         }
     }
 

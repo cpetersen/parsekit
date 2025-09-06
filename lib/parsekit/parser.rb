@@ -81,6 +81,7 @@ module ParseKit
     end
     
     # Detect format from file path
+    # @deprecated Use the native format detection in parse_file instead
     # @param path [String] File path
     # @return [Symbol, nil] Format symbol or nil if unknown
     def detect_format(path)
@@ -101,6 +102,7 @@ module ParseKit
     end
     
     # Detect format from binary data
+    # @deprecated Use the native format detection in parse_bytes instead
     # @param data [String, Array<Integer>] Binary data
     # @return [Symbol] Format symbol
     def detect_format_from_bytes(data)
@@ -212,39 +214,22 @@ module ParseKit
     end
     
     # Parse file using format-specific parser
-    # This method now detects format and routes to the appropriate parser
+    # This method delegates to parse_file which uses centralized dispatch in Rust
     # @param path [String] File path
     # @return [String] Parsed content
     def parse_file_routed(path)
-      format = detect_format(path)
-      data = File.read(path, mode: 'rb').bytes
-      
-      case format
-      when :docx then parse_docx(data)
-      when :xlsx then parse_xlsx(data) 
-      when :pdf then parse_pdf(data)
-      when :json then parse_json(data)
-      when :xml then parse_xml(data)
-      else parse_text(data)
-      end
+      # Simply delegate to parse_file which already has dispatch logic
+      parse_file(path)
     end
     
     # Parse bytes using format-specific parser
-    # This method detects format and routes to the appropriate parser
+    # This method delegates to parse_bytes which uses centralized dispatch in Rust
     # @param data [String, Array<Integer>] Binary data
     # @return [String] Parsed content
     def parse_bytes_routed(data)
-      format = detect_format_from_bytes(data)
+      # Simply delegate to parse_bytes which already has dispatch logic
       bytes = data.is_a?(String) ? data.bytes : data
-      
-      case format
-      when :docx then parse_docx(bytes)
-      when :xlsx then parse_xlsx(bytes)
-      when :pdf then parse_pdf(bytes)
-      when :json then parse_json(bytes)
-      when :xml then parse_xml(bytes)
-      else parse_text(bytes)
-      end
+      parse_bytes(bytes)
     end
     
     # Parse with a block for processing results

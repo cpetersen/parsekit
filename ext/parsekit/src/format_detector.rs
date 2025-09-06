@@ -191,15 +191,6 @@ impl FormatDetector {
         }
     }
     
-    /// Check if a format requires OCR processing
-    pub fn is_image_format(format: &FileFormat) -> bool {
-        matches!(format, 
-            FileFormat::Png | 
-            FileFormat::Jpeg | 
-            FileFormat::Tiff | 
-            FileFormat::Bmp
-        )
-    }
     
     /// Get all supported extensions
     pub fn supported_extensions() -> Vec<&'static str> {
