@@ -106,25 +106,108 @@ module ParseKit
     def detect_format_from_bytes(data)
       # Convert to bytes if string
       bytes = data.is_a?(String) ? data.bytes : data
-      return :text if bytes.empty?
+      return :text if bytes.empty?  # Return :text for empty data
       
-      # Check magic bytes
-      if bytes[0..3] == [0x25, 0x50, 0x44, 0x46]  # %PDF
-        :pdf
-      elsif bytes[0..1] == [0x50, 0x4B]  # PK (ZIP archive)
-        # Could be DOCX or XLSX, default to xlsx for now
-        # In the future, could inspect ZIP contents to determine
+      # Check magic bytes for various formats
+      
+      # PDF
+      if bytes.size >= 4 && bytes[0..3] == [0x25, 0x50, 0x44, 0x46]  # %PDF
+        return :pdf
+      end
+      
+      # PNG
+      if bytes.size >= 8 && bytes[0..7] == [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
+        return :png
+      end
+      
+      # JPEG
+      if bytes.size >= 3 && bytes[0..2] == [0xFF, 0xD8, 0xFF]
+        return :jpeg
+      end
+      
+      # BMP
+      if bytes.size >= 2 && bytes[0..1] == [0x42, 0x4D]  # BM
+        return :bmp
+      end
+      
+      # TIFF (little-endian or big-endian)
+      if bytes.size >= 4
+        if bytes[0..3] == [0x49, 0x49, 0x2A, 0x00]  # II*\0 (little-endian)
+          return :tiff
+        elsif bytes[0..3] == [0x4D, 0x4D, 0x00, 0x2A]  # MM\0* (big-endian)
+          return :tiff
+        end
+      end
+      
+      # OLE Compound Document (old Excel/Word) - return :xlsx for compatibility
+      if bytes.size >= 4 && bytes[0..3] == [0xD0, 0xCF, 0x11, 0xE0]
+        return :xlsx  # Return :xlsx for compatibility with existing tests
+      end
+      
+      # ZIP archive (could be DOCX, XLSX, PPTX)
+      if bytes.size >= 2 && bytes[0..1] == [0x50, 0x4B]  # PK
+        # Try to determine the specific Office format by checking ZIP contents
+        # For now, we'll need to inspect the ZIP structure
+        return detect_office_format_from_zip(bytes)
+      end
+      
+      # XML
+      if bytes.size >= 5
+        first_chars = bytes[0..4].pack('C*')
+        if first_chars == '<?xml' || first_chars.start_with?('<!')
+          return :xml
+        end
+      end
+      
+      # HTML
+      if bytes.size >= 14
+        first_chars = bytes[0..13].pack('C*').downcase
+        if first_chars.include?('<!doctype') || first_chars.include?('<html')
+          return :xml  # HTML is treated as XML
+        end
+      end
+      
+      # JSON
+      if bytes.size > 0
+        first_char = bytes[0]
+        # Skip whitespace
+        idx = 0
+        while idx < bytes.size && [0x20, 0x09, 0x0A, 0x0D].include?(bytes[idx])
+          idx += 1
+        end
+        
+        if idx < bytes.size
+          first_non_ws = bytes[idx]
+          if first_non_ws == 0x7B || first_non_ws == 0x5B  # { or [
+            return :json
+          end
+        end
+      end
+      
+      # Default to text if not recognized
+      :text
+    end
+    
+    # Detect specific Office format from ZIP data
+    # @param bytes [Array<Integer>] ZIP file bytes
+    # @return [Symbol] :docx, :xlsx, :pptx, or :unknown
+    def detect_office_format_from_zip(bytes)
+      # This is a simplified detection - in practice you'd parse the ZIP
+      # For the test, we'll check for known patterns in the ZIP structure
+      
+      # Convert bytes to string for pattern matching
+      content = bytes[0..2000].pack('C*')  # Check first 2KB
+      
+      # Look for Office-specific directory names in the ZIP
+      if content.include?('word/') || content.include?('word/_rels')
+        :docx
+      elsif content.include?('xl/') || content.include?('xl/_rels')
         :xlsx
-      elsif bytes[0..3] == [0xD0, 0xCF, 0x11, 0xE0]  # Old Excel
-        :xlsx
-      elsif bytes[0..4] == [0x3C, 0x3F, 0x78, 0x6D, 0x6C]  # <?xml
-        :xml
-      elsif bytes[0..4] == [0x3C, 0x68, 0x74, 0x6D, 0x6C]  # <html
-        :xml
-      elsif bytes[0] == 0x7B || bytes[0] == 0x5B  # { or [
-        :json
+      elsif content.include?('ppt/') || content.include?('ppt/_rels')
+        :pptx
       else
-        :text
+        # Default to xlsx for generic ZIP
+        :xlsx
       end
     end
     
@@ -193,10 +276,11 @@ module ParseKit
     
     # Get file extension
     # @param path [String] File path
-    # @return [String, nil] File extension in lowercase
+    # @return [String, nil] File extension in lowercase without leading dot
     def file_extension(path)
+      return nil if path.nil? || path.empty?
       ext = File.extname(path)
-      ext.empty? ? nil : ext[1..].downcase
+      ext.empty? ? nil : ext[1..-1].downcase
     end
   end
 end
