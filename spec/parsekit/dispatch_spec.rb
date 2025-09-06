@@ -101,7 +101,7 @@ RSpec.describe "Dispatch and Routing" do
       end
 
       it "performs OCR on .tiff files" do
-        tiff_file = File.join(__dir__, "..", "fixtures", "ocr_rgb_lzw.tif")
+        tiff_file = File.join(__dir__, "..", "fixtures", "rgb_lzw.tiff")
         if File.exist?(tiff_file)
           result = parser.parse_file(tiff_file)
           expect(result).to be_a(String)
@@ -128,7 +128,7 @@ RSpec.describe "Dispatch and Routing" do
         Tempfile.create(['test', '.json']) do |file|
           file.write('{"test": true}')
           file.rewind
-          
+
           result = parser.parse_file(file.path)
           expect(result).to include('"test"')
           expect(result).to include('true')
@@ -141,7 +141,7 @@ RSpec.describe "Dispatch and Routing" do
         Tempfile.create(['test', '.xml']) do |file|
           file.write('<?xml version="1.0"?><root>content</root>')
           file.rewind
-          
+
           result = parser.parse_file(file.path)
           expect(result).to include('content')
         end
@@ -151,7 +151,7 @@ RSpec.describe "Dispatch and Routing" do
         Tempfile.create(['test', '.html']) do |file|
           file.write('<!DOCTYPE html><html><body>content</body></html>')
           file.rewind
-          
+
           result = parser.parse_file(file.path)
           expect(result).to include('content')
         end
@@ -163,7 +163,7 @@ RSpec.describe "Dispatch and Routing" do
         Tempfile.create(['test', '.txt']) do |file|
           file.write('Plain text content')
           file.rewind
-          
+
           result = parser.parse_file(file.path)
           expect(result).to eq('Plain text content')
         end
@@ -173,7 +173,7 @@ RSpec.describe "Dispatch and Routing" do
         Tempfile.create(['test', '.md']) do |file|
           file.write('# Markdown content')
           file.rewind
-          
+
           result = parser.parse_file(file.path)
           expect(result).to eq('# Markdown content')
         end
@@ -184,7 +184,7 @@ RSpec.describe "Dispatch and Routing" do
           content = "col1,col2\nval1,val2"
           file.write(content)
           file.rewind
-          
+
           result = parser.parse_file(file.path)
           expect(result).to eq(content)
         end
@@ -196,7 +196,7 @@ RSpec.describe "Dispatch and Routing" do
         Tempfile.create(['test', '.xyz']) do |file|
           file.write('Unknown format content')
           file.rewind
-          
+
           result = parser.parse_file(file.path)
           expect(result).to eq('Unknown format content')
         end
@@ -206,7 +206,7 @@ RSpec.describe "Dispatch and Routing" do
         Tempfile.create('test_no_ext') do |file|
           file.write('No extension content')
           file.rewind
-          
+
           result = parser.parse_file(file.path)
           expect(result).to eq('No extension content')
         end
@@ -326,7 +326,7 @@ RSpec.describe "Dispatch and Routing" do
           Tempfile.create(['test', ext]) do |file|
             file.write(content)
             file.rewind
-            
+
             result = parser.parse_file_routed(file.path)
             expect(result).to include(expected)
           end
@@ -357,42 +357,42 @@ RSpec.describe "Dispatch and Routing" do
       Tempfile.create(['test', '.json']) do |file|
         file.write('{"test": true}')
         file.rewind
-        
+
         # Ruby routing
         ruby_result = parser.parse_file_routed(file.path)
-        
+
         # Direct parse (uses Rust routing)
         rust_result = parser.parse_file(file.path)
-        
+
         expect(ruby_result).to eq(rust_result)
       end
     end
 
     it "Ruby and Rust dispatch produce same results for bytes" do
       test_data = '{"key": "value"}'
-      
+
       # Ruby routing
       ruby_result = parser.parse_bytes_routed(test_data)
-      
+
       # Direct parse (uses Rust routing)
       rust_result = parser.parse_bytes(test_data.bytes)
-      
+
       expect(ruby_result).to eq(rust_result)
     end
 
     it "All three dispatch methods handle unknown formats consistently" do
       unknown_data = "Unknown format content"
-      
+
       Tempfile.create(['test', '.xyz']) do |file|
         file.write(unknown_data)
         file.rewind
-        
+
         # All should route to text parser
         file_result = parser.parse_file(file.path)
         routed_file_result = parser.parse_file_routed(file.path)
         bytes_result = parser.parse_bytes(unknown_data.bytes)
         routed_bytes_result = parser.parse_bytes_routed(unknown_data)
-        
+
         expect(file_result).to eq(unknown_data)
         expect(routed_file_result).to eq(unknown_data)
         expect(bytes_result).to eq(unknown_data)
@@ -419,7 +419,7 @@ RSpec.describe "Dispatch and Routing" do
       Tempfile.create(['corrupted', '.pdf']) do |file|
         file.write("Not a real PDF")
         file.rewind
-        
+
         # Should route to PDF parser but fail parsing
         expect { parser.parse_file(file.path) }.to raise_error(StandardError)
       end
@@ -432,11 +432,11 @@ RSpec.describe "Dispatch and Routing" do
       Tempfile.create(['test', '.json']) do |file|
         file.write('{"fast": true}')
         file.rewind
-        
+
         start_time = Time.now
         result = parser.parse_file(file.path)
         elapsed = Time.now - start_time
-        
+
         expect(result).to include('"fast"')
         # Should be very fast for small files
         expect(elapsed).to be < 0.1
