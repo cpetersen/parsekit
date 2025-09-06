@@ -194,4 +194,4 @@ Releases are managed by maintainers. The process is:
 
 ## Questions?
 
-Feel free to open an issue with the `question` label or start a discussion in the [GitHub Discussions](https://github.com/cpetersen/parsekit/discussions) area.
+Feel free to open an issue with the `question` label or start a discussion in the [GitHub Discussions](https://github.com/scientist-labs/parsekit/discussions) area.

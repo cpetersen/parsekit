@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
 
   spec.summary = "Ruby document parsing toolkit with PDF and OCR support"
   spec.description = "Native Ruby gem for parsing documents (PDF, DOCX, XLSX, images with OCR) with zero runtime dependencies. Statically links MuPDF for PDF extraction and Tesseract for OCR."
-  spec.homepage = "https://github.com/cpetersen/parsekit"
+  spec.homepage = "https://github.com/scientist-labs/parsekit"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.0.0"
 
@@ -20,7 +20,7 @@ Gem::Specification.new do |spec|
 
   # Specify which files should be added to the gem when it is released.
   spec.files = Dir.chdir(__dir__) do
-    Dir["lib/**/*"] + Dir["ext/**/*.rs", "ext/**/*.toml", "ext/**/*.rb"] + 
+    Dir["lib/**/*"] + Dir["ext/**/*.rs", "ext/**/*.toml", "ext/**/*.rb"] +
     ["README.md", "LICENSE.txt", "CHANGELOG.md"].select { |f| File.exist?(f) }
   end
   spec.bindir = "exe"

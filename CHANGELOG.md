@@ -49,5 +49,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rust edition 2021
 - Cross-compilation support for multiple platforms
 
-[Unreleased]: https://github.com/cpetersen/parsekit/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/cpetersen/parsekit/releases/tag/v0.1.0
+[Unreleased]: https://github.com/scientist-labs/parsekit/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/scientist-labs/parsekit/releases/tag/v0.1.0
