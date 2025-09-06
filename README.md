@@ -186,7 +186,7 @@ ParseKit uses a hybrid Ruby/Rust architecture:
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/cpetersen/parsekit.
+Bug reports and pull requests are welcome on GitHub at https://github.com/scientist-labs/parsekit.
 
 ## License
 
