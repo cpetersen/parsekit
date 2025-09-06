@@ -2,6 +2,7 @@ use magnus::{function, prelude::*, Error, Ruby};
 
 mod parser;
 mod error;
+mod format_detector;
 
 /// Initialize the ParseKit module and its submodules
 #[magnus::init]

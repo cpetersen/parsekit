@@ -14,6 +14,22 @@ require_relative "parsekit/parser"
 
 # ParseKit is a Ruby document parsing toolkit with PDF and OCR support
 module ParseKit
+  # Supported file formats and their extensions
+  SUPPORTED_FORMATS = {
+    pdf: ['.pdf'],
+    docx: ['.docx'],
+    xlsx: ['.xlsx'],
+    xls: ['.xls'],
+    pptx: ['.pptx'],
+    png: ['.png'],
+    jpeg: ['.jpg', '.jpeg'],
+    tiff: ['.tiff', '.tif'],
+    bmp: ['.bmp'],
+    json: ['.json'],
+    xml: ['.xml', '.html'],
+    text: ['.txt', '.md', '.csv']
+  }.freeze
+
   class << self
     # The parse_file and parse_bytes methods are defined in the native extension
     # We just need to document them here or add wrapper logic if needed
@@ -48,6 +64,22 @@ module ParseKit
     # @return [Boolean] True if the file format is supported
     def supports_file?(path)
       Parser.new.supports_file?(path)
+    end
+    
+    # Detect file format from filename/extension
+    # @param filename [String, nil] The filename to check
+    # @return [Symbol] The detected format, or :unknown
+    def detect_format(filename)
+      return :unknown if filename.nil? || filename.empty?
+      
+      ext = File.extname(filename).downcase
+      return :unknown if ext.empty?
+      
+      SUPPORTED_FORMATS.each do |format, extensions|
+        return format if extensions.include?(ext)
+      end
+      
+      :unknown
     end
     
     # Get the native library version
